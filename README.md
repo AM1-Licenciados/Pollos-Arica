@@ -57,8 +57,6 @@ La estructura relacional y las responsabilidades de las tablas se describen en [
 
 Cuando el código fuente sea incorporado, cada aplicación tendrá sus propias instrucciones de instalación y ejecución. Las credenciales de Supabase deberán configurarse mediante variables de compilación o un mecanismo local seguro.
 
-No publiques contraseñas, tokens privados ni la clave `service_role` en este repositorio.
-
 ## Estado del desarrollo
 
 El proyecto continúa en desarrollo. Las funciones futuras y las limitaciones conocidas están descritas en [docs/ESTADO_PROYECTO.md](docs/ESTADO_PROYECTO.md).
