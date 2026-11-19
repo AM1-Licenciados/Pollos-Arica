@@ -1,0 +1,7 @@
+funcion,tipo,tipo_retorno,specific_name
+admin_actual_puede_crear_usuarios,FUNCTION,boolean,admin_actual_puede_crear_usuarios_17918
+crear_pedido,FUNCTION,jsonb,crear_pedido_17860
+crear_pedido_con_seguimiento,FUNCTION,jsonb,crear_pedido_con_seguimiento_17962
+es_admin_activo,FUNCTION,boolean,es_admin_activo_17917
+obtener_mis_pedidos,FUNCTION,jsonb,obtener_mis_pedidos_17963
+rls_auto_enable,FUNCTION,event_trigger,rls_auto_enable_17644

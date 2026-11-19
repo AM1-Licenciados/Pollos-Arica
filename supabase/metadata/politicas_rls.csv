@@ -1,0 +1,17 @@
+esquema,tabla,politica,permisiva,roles,operacion,condicion_using,condicion_with_check
+public,categorias,catalogo_publico_categorias,PERMISSIVE,"{anon,authenticated}",SELECT,(activo = true),null
+public,clientes,admin_consultar_clientes,PERMISSIVE,{authenticated},SELECT,( SELECT es_admin_activo() AS es_admin_activo),null
+public,configuracion_negocio,configuracion_negocio_actualizacion_admin,PERMISSIVE,{authenticated},UPDATE,( SELECT es_admin_activo() AS es_admin_activo),( SELECT es_admin_activo() AS es_admin_activo)
+public,configuracion_negocio,configuracion_negocio_lectura_publica,PERMISSIVE,"{anon,authenticated}",SELECT,true,null
+public,configuracion_negocio,configuracion_publica_lectura,PERMISSIVE,"{anon,authenticated}",SELECT,true,null
+public,detalle_pedidos,admin_consultar_detalles_pedidos,PERMISSIVE,{authenticated},SELECT,( SELECT es_admin_activo() AS es_admin_activo),null
+public,pedidos,admin_actualizar_pedidos,PERMISSIVE,{authenticated},UPDATE,( SELECT es_admin_activo() AS es_admin_activo),( SELECT es_admin_activo() AS es_admin_activo)
+public,pedidos,admin_consultar_pedidos,PERMISSIVE,{authenticated},SELECT,( SELECT es_admin_activo() AS es_admin_activo),null
+public,perfiles_admin,perfiles_admin_consultar,PERMISSIVE,{authenticated},SELECT,((id = ( SELECT auth.uid() AS uid)) OR ( SELECT admin_actual_puede_crear_usuarios() AS admin_actual_puede_crear_usuarios)),null
+public,productos,catalogo_publico_productos,PERMISSIVE,"{anon,authenticated}",SELECT,"((activo = true) AND (EXISTS ( SELECT 1
+   FROM categorias c
+  WHERE ((c.id = productos.categoria_id) AND (c.activo = true)))))",null
+public,variantes_producto,catalogo_publico_variantes,PERMISSIVE,"{anon,authenticated}",SELECT,"((activa = true) AND (EXISTS ( SELECT 1
+   FROM (productos p
+     JOIN categorias c ON ((c.id = p.categoria_id)))
+  WHERE ((p.id = variantes_producto.producto_id) AND (p.activo = true) AND (c.activo = true)))))",null

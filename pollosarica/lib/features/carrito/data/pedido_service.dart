@@ -1,0 +1,135 @@
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../cliente/services/cliente_local_service.dart';
+import 'carrito_service.dart';
+
+class PedidoCreado {
+  final String id;
+  final String codigo;
+  final double total;
+  final bool seguimientoGuardado;
+
+  const PedidoCreado({
+    required this.id,
+    required this.codigo,
+    required this.total,
+    this.seguimientoGuardado = true,
+  });
+}
+
+class PedidoService {
+  PedidoService._();
+
+  static final PedidoService instance = PedidoService._();
+
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  Future<String?> obtenerQrActual() async {
+    final respuesta = await _supabase
+        .from('configuracion_negocio')
+        .select('qr_imagen_url')
+        .limit(1)
+        .maybeSingle();
+
+    return respuesta?['qr_imagen_url'] as String?;
+  }
+
+  Future<PedidoCreado> crearPedido({
+    required String nombre,
+    required String celular,
+    required String metodoPago,
+    required String tipoEntrega,
+    required String momentoPreparacion,
+    String? observaciones,
+  }) async {
+    final carrito = CarritoService.instance;
+
+    final momentoFinal = tipoEntrega == 'retiro'
+        ? 'inmediato'
+        : momentoPreparacion;
+
+    if (carrito.items.isEmpty) {
+      throw Exception('Tu carrito está vacío.');
+    }
+
+    final items = carrito.items
+        .map(
+          (item) => {
+            'producto_id': item.producto.id,
+            'variante_id': item.variante.id,
+            'cantidad': item.cantidad,
+          },
+        )
+        .toList();
+
+    final respuesta = await _supabase.rpc(
+      'crear_pedido_con_seguimiento',
+      params: {
+        'p_nombre': nombre.trim(),
+        'p_celular': celular.trim(),
+        'p_metodo_pago': metodoPago,
+        'p_items': items,
+        'p_observaciones': observaciones?.trim().isEmpty == true
+            ? null
+            : observaciones?.trim(),
+        'p_tipo_entrega': tipoEntrega,
+        'p_momento_preparacion': momentoFinal,
+      },
+    );
+
+    if (respuesta is! Map) {
+      throw Exception('Supabase devolvió una respuesta inesperada.');
+    }
+
+    final data = Map<String, dynamic>.from(respuesta);
+
+    if (data['exito'] != true) {
+      throw Exception('No se pudo registrar el pedido.');
+    }
+
+    final pedidoId = data['pedido_id']?.toString();
+    final codigo = data['codigo']?.toString();
+    final total = data['total'];
+    final token = data['seguimiento_token']?.toString();
+
+    if (pedidoId == null ||
+        pedidoId.isEmpty ||
+        codigo == null ||
+        codigo.isEmpty ||
+        total is! num ||
+        token == null ||
+        token.isEmpty) {
+      throw Exception(
+        'El pedido se registró, pero Supabase no devolvió todos los datos de seguimiento.',
+      );
+    }
+
+    // Intentamos guardar la credencial privada en el dispositivo.
+    // Si falla el almacenamiento local, no repetimos la creación
+    // del pedido ni dejamos el carrito listo para duplicarlo.
+    var seguimientoGuardado = false;
+
+    try {
+      await ClienteLocalService.instance.guardarPedidoSeguimiento(
+        pedidoId: pedidoId,
+        seguimientoToken: token,
+      );
+
+      seguimientoGuardado = true;
+    } catch (_) {
+      seguimientoGuardado = false;
+    }
+
+    final pedido = PedidoCreado(
+      id: pedidoId,
+      codigo: codigo,
+      total: total.toDouble(),
+      seguimientoGuardado: seguimientoGuardado,
+    );
+
+    carrito.vaciar();
+
+    return pedido;
+  }
+}

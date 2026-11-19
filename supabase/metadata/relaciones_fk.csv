@@ -1,0 +1,7 @@
+tabla,columna,tabla_referenciada,columna_referenciada,regla_al_eliminar
+detalle_pedidos,pedido_id,pedidos,id,CASCADE
+detalle_pedidos,producto_id,productos,id,SET NULL
+detalle_pedidos,variante_id,variantes_producto,id,SET NULL
+pedidos,cliente_id,clientes,id,NO ACTION
+productos,categoria_id,categorias,id,RESTRICT
+variantes_producto,producto_id,productos,id,CASCADE

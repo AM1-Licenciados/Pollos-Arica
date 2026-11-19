@@ -1,0 +1,79 @@
+table_name,column_name,data_type,is_nullable,column_default
+categorias,id,uuid,NO,gen_random_uuid()
+categorias,nombre,character varying,NO,null
+categorias,descripcion,text,YES,null
+categorias,activo,boolean,NO,true
+categorias,orden,integer,NO,0
+categorias,created_at,timestamp with time zone,NO,now()
+categorias,updated_at,timestamp with time zone,NO,now()
+clientes,id,uuid,NO,gen_random_uuid()
+clientes,nombre,character varying,NO,null
+clientes,celular,character varying,NO,null
+clientes,created_at,timestamp with time zone,NO,now()
+clientes,updated_at,timestamp with time zone,NO,now()
+configuracion_negocio,id,uuid,NO,gen_random_uuid()
+configuracion_negocio,nombre_negocio,character varying,NO,'Pollos Arica'::character varying
+configuracion_negocio,qr_imagen_url,text,YES,null
+configuracion_negocio,updated_at,timestamp with time zone,NO,now()
+configuracion_negocio,telefono_whatsapp,text,NO,'+59161370096'::text
+configuracion_negocio,telefono_llamadas,text,NO,'+59161370096'::text
+configuracion_negocio,direccion,text,NO,''::text
+configuracion_negocio,latitud,double precision,NO,'-17.8311294'::numeric
+configuracion_negocio,longitud,double precision,NO,'-63.1341483'::numeric
+detalle_pedidos,id,uuid,NO,gen_random_uuid()
+detalle_pedidos,pedido_id,uuid,NO,null
+detalle_pedidos,producto_id,uuid,YES,null
+detalle_pedidos,variante_id,uuid,YES,null
+detalle_pedidos,nombre_producto,character varying,NO,null
+detalle_pedidos,nombre_variante,character varying,YES,null
+detalle_pedidos,seccion,character varying,YES,null
+detalle_pedidos,cantidad,integer,NO,null
+detalle_pedidos,precio_unitario,numeric,NO,null
+detalle_pedidos,subtotal,numeric,NO,null
+detalle_pedidos,created_at,timestamp with time zone,NO,now()
+pedidos,id,uuid,NO,gen_random_uuid()
+pedidos,codigo,character varying,YES,null
+pedidos,cliente_id,uuid,NO,null
+pedidos,estado,character varying,NO,'pendiente'::character varying
+pedidos,metodo_pago,character varying,NO,null
+pedidos,estado_pago,character varying,NO,'pendiente'::character varying
+pedidos,tipo_entrega,character varying,NO,'retiro'::character varying
+pedidos,subtotal,numeric,NO,null
+pedidos,total,numeric,NO,null
+pedidos,observaciones,text,YES,null
+pedidos,created_at,timestamp with time zone,NO,now()
+pedidos,updated_at,timestamp with time zone,NO,now()
+pedidos,momento_preparacion,text,NO,'inmediato'::text
+pedidos,cliente_llego,boolean,NO,false
+pedidos,seguimiento_token,uuid,NO,gen_random_uuid()
+perfiles_admin,id,uuid,NO,null
+perfiles_admin,nombre,character varying,NO,null
+perfiles_admin,activo,boolean,NO,true
+perfiles_admin,puede_crear_usuarios,boolean,NO,false
+perfiles_admin,created_at,timestamp with time zone,NO,now()
+perfiles_admin,updated_at,timestamp with time zone,NO,now()
+productos,id,uuid,NO,gen_random_uuid()
+productos,categoria_id,uuid,NO,null
+productos,nombre,character varying,NO,null
+productos,descripcion,text,YES,null
+productos,ingredientes,text,YES,null
+productos,imagen_url,text,YES,null
+productos,disponible,boolean,NO,true
+productos,activo,boolean,NO,true
+productos,orden,integer,NO,0
+productos,created_at,timestamp with time zone,NO,now()
+productos,updated_at,timestamp with time zone,NO,now()
+productos,seccion,text,YES,null
+variantes_producto,id,uuid,NO,gen_random_uuid()
+variantes_producto,producto_id,uuid,NO,null
+variantes_producto,nombre,character varying,NO,null
+variantes_producto,precio,numeric,NO,null
+variantes_producto,es_predeterminada,boolean,NO,false
+variantes_producto,activa,boolean,NO,true
+variantes_producto,orden,integer,NO,0
+variantes_producto,created_at,timestamp with time zone,NO,now()
+variantes_producto,updated_at,timestamp with time zone,NO,now()
+variantes_producto,descripcion,text,YES,null
+variantes_producto,ingredientes,text,YES,null
+variantes_producto,imagen_url,text,YES,null
+variantes_producto,disponible,boolean,NO,true

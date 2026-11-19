@@ -1,0 +1,573 @@
+-- Definiciones exportadas desde la base de datos actual de Pollos Arica.
+-- Revisar antes de ejecutar en otro proyecto. No contiene datos de clientes.
+
+CREATE OR REPLACE FUNCTION public.admin_actual_puede_crear_usuarios()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.perfiles_admin AS p
+        WHERE p.id = (SELECT auth.uid())
+          AND p.activo = TRUE
+          AND p.puede_crear_usuarios = TRUE
+    );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.crear_pedido(p_nombre text, p_celular text, p_metodo_pago text, p_items jsonb, p_observaciones text DEFAULT NULL::text, p_tipo_entrega text DEFAULT 'retiro'::text, p_momento_preparacion text DEFAULT 'inmediato'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+
+DECLARE
+    v_cliente_id UUID;
+    v_pedido_id UUID;
+    v_codigo TEXT;
+
+    v_item JSONB;
+    v_producto_id UUID;
+    v_variante_id UUID;
+    v_cantidad INTEGER;
+
+    v_nombre_producto TEXT;
+    v_nombre_variante TEXT;
+    v_seccion TEXT;
+    v_precio NUMERIC(10,2);
+    v_subtotal_item NUMERIC(10,2);
+
+    v_total NUMERIC(10,2) := 0;
+    v_cantidad_items INTEGER := 0;
+
+BEGIN
+
+    -- =============================================
+    -- VALIDAR DATOS DEL CLIENTE
+    -- =============================================
+
+    IF p_nombre IS NULL
+       OR LENGTH(TRIM(p_nombre)) < 2
+       OR LENGTH(TRIM(p_nombre)) > 120 THEN
+
+        RAISE EXCEPTION 'Ingresa un nombre válido.';
+    END IF;
+
+    IF p_celular IS NULL
+       OR TRIM(p_celular) !~ '^[0-9+() -]{7,30}$' THEN
+
+        RAISE EXCEPTION 'Ingresa un número de celular válido.';
+    END IF;
+
+
+    -- =============================================
+    -- VALIDAR MÉTODO DE PAGO
+    -- =============================================
+
+    IF p_metodo_pago IS NULL
+       OR p_metodo_pago NOT IN ('efectivo', 'qr') THEN
+
+        RAISE EXCEPTION 'Método de pago no válido.';
+    END IF;
+
+
+    -- =============================================
+    -- VALIDAR MODALIDAD DEL PEDIDO
+    -- =============================================
+
+    IF p_tipo_entrega IS NULL
+       OR p_tipo_entrega NOT IN (
+            'retiro',
+            'consumo_local'
+       ) THEN
+
+        RAISE EXCEPTION 'Modalidad de pedido no válida.';
+    END IF;
+
+
+    -- =============================================
+    -- VALIDAR MOMENTO DE PREPARACIÓN
+    -- =============================================
+
+    IF p_momento_preparacion IS NULL
+       OR p_momento_preparacion NOT IN (
+            'inmediato',
+            'al_llegar'
+       ) THEN
+
+        RAISE EXCEPTION 'Momento de preparación no válido.';
+    END IF;
+
+
+    -- =============================================
+    -- VALIDAR PRODUCTOS RECIBIDOS
+    -- =============================================
+
+    IF p_items IS NULL
+       OR JSONB_TYPEOF(p_items) <> 'array' THEN
+
+        RAISE EXCEPTION 'El carrito no contiene una lista válida.';
+    END IF;
+
+    IF JSONB_ARRAY_LENGTH(p_items) < 1
+       OR JSONB_ARRAY_LENGTH(p_items) > 30 THEN
+
+        RAISE EXCEPTION 'La cantidad de productos del pedido no es válida.';
+    END IF;
+
+
+    -- =============================================
+    -- GENERAR CÓDIGO DEL PEDIDO
+    -- =============================================
+
+    v_codigo :=
+        'PA-' ||
+        TO_CHAR(NOW(), 'YYMMDD') ||
+        '-' ||
+        UPPER(
+            SUBSTRING(
+                REPLACE(GEN_RANDOM_UUID()::TEXT, '-', ''),
+                1,
+                6
+            )
+        );
+
+
+    -- =============================================
+    -- REGISTRAR O ACTUALIZAR CLIENTE
+    -- =============================================
+
+    INSERT INTO public.clientes (
+        nombre,
+        celular
+    )
+    VALUES (
+        TRIM(p_nombre),
+        TRIM(p_celular)
+    )
+    ON CONFLICT (celular)
+    DO UPDATE SET
+        nombre = EXCLUDED.nombre,
+        updated_at = NOW()
+    RETURNING id INTO v_cliente_id;
+
+
+    -- =============================================
+    -- PREPARAR TABLA TEMPORAL
+    -- =============================================
+
+    CREATE TEMP TABLE IF NOT EXISTS pedido_items_temporales (
+        producto_id UUID,
+        variante_id UUID,
+        nombre_producto TEXT,
+        nombre_variante TEXT,
+        seccion TEXT,
+        cantidad INTEGER,
+        precio_unitario NUMERIC(10,2),
+        subtotal NUMERIC(10,2)
+    ) ON COMMIT DROP;
+
+    -- Evitar conservar detalles de una ejecución anterior
+    -- dentro de la misma transacción.
+
+    TRUNCATE TABLE pg_temp.pedido_items_temporales;
+
+
+    -- =============================================
+    -- PROCESAR PRODUCTOS DEL CARRITO
+    -- =============================================
+
+    FOR v_item IN
+        SELECT value
+        FROM JSONB_ARRAY_ELEMENTS(p_items)
+    LOOP
+
+        -- Validar identificadores y cantidad
+
+        BEGIN
+
+            v_producto_id :=
+                (v_item ->> 'producto_id')::UUID;
+
+            v_variante_id :=
+                (v_item ->> 'variante_id')::UUID;
+
+            v_cantidad :=
+                (v_item ->> 'cantidad')::INTEGER;
+
+        EXCEPTION
+            WHEN OTHERS THEN
+
+                RAISE EXCEPTION
+                    'Uno de los productos del carrito contiene datos inválidos.';
+        END;
+
+
+        IF v_cantidad IS NULL
+           OR v_cantidad < 1
+           OR v_cantidad > 20 THEN
+
+            RAISE EXCEPTION
+                'La cantidad de uno de los productos no es válida.';
+        END IF;
+
+
+        -- Consultar producto, variante y precio real
+
+        v_nombre_producto := NULL;
+        v_nombre_variante := NULL;
+        v_seccion := NULL;
+        v_precio := NULL;
+
+        SELECT
+            p.nombre,
+            vp.nombre,
+            p.seccion,
+            vp.precio
+        INTO
+            v_nombre_producto,
+            v_nombre_variante,
+            v_seccion,
+            v_precio
+        FROM public.productos AS p
+        INNER JOIN public.variantes_producto AS vp
+            ON vp.producto_id = p.id
+        WHERE
+            p.id = v_producto_id
+            AND vp.id = v_variante_id
+            AND p.activo = TRUE
+            AND p.disponible = TRUE
+            AND vp.activa = TRUE
+            AND vp.disponible = TRUE;
+
+
+        IF NOT FOUND THEN
+
+            RAISE EXCEPTION
+                'El producto "%" ya no está disponible.',
+                COALESCE(v_nombre_producto, 'seleccionado');
+        END IF;
+
+
+        IF v_precio IS NULL OR v_precio <= 0 THEN
+
+            RAISE EXCEPTION
+                'El producto "%" no tiene un precio válido.',
+                v_nombre_producto;
+        END IF;
+
+
+        -- Calcular subtotal con precio de Supabase
+
+        v_subtotal_item :=
+            v_precio * v_cantidad;
+
+        v_total :=
+            v_total + v_subtotal_item;
+
+        v_cantidad_items :=
+            v_cantidad_items + v_cantidad;
+
+
+        -- Guardar detalle temporal
+
+        INSERT INTO pg_temp.pedido_items_temporales (
+            producto_id,
+            variante_id,
+            nombre_producto,
+            nombre_variante,
+            seccion,
+            cantidad,
+            precio_unitario,
+            subtotal
+        )
+        VALUES (
+            v_producto_id,
+            v_variante_id,
+            v_nombre_producto,
+            v_nombre_variante,
+            v_seccion,
+            v_cantidad,
+            v_precio,
+            v_subtotal_item
+        );
+
+    END LOOP;
+
+
+    -- =============================================
+    -- CREAR PEDIDO
+    -- =============================================
+
+    INSERT INTO public.pedidos (
+        codigo,
+        cliente_id,
+        estado,
+        metodo_pago,
+        estado_pago,
+        tipo_entrega,
+        momento_preparacion,
+        cliente_llego,
+        subtotal,
+        total,
+        observaciones
+    )
+    VALUES (
+        v_codigo,
+        v_cliente_id,
+        'pendiente',
+        p_metodo_pago,
+        'pendiente',
+        p_tipo_entrega,
+        p_momento_preparacion,
+        FALSE,
+        v_total,
+        v_total,
+        NULLIF(TRIM(p_observaciones), '')
+    )
+    RETURNING id INTO v_pedido_id;
+
+
+    -- =============================================
+    -- GUARDAR DETALLES DEL PEDIDO
+    -- =============================================
+
+    INSERT INTO public.detalle_pedidos (
+        pedido_id,
+        producto_id,
+        variante_id,
+        nombre_producto,
+        nombre_variante,
+        seccion,
+        cantidad,
+        precio_unitario,
+        subtotal
+    )
+    SELECT
+        v_pedido_id,
+        producto_id,
+        variante_id,
+        nombre_producto,
+        nombre_variante,
+        seccion,
+        cantidad,
+        precio_unitario,
+        subtotal
+    FROM pg_temp.pedido_items_temporales;
+
+
+    -- =============================================
+    -- DEVOLVER CONFIRMACIÓN
+    -- =============================================
+
+    RETURN JSONB_BUILD_OBJECT(
+        'exito', TRUE,
+        'pedido_id', v_pedido_id,
+        'codigo', v_codigo,
+        'estado', 'pendiente',
+        'total', v_total,
+        'cantidad_productos', v_cantidad_items,
+        'metodo_pago', p_metodo_pago,
+        'tipo_entrega', p_tipo_entrega,
+        'momento_preparacion', p_momento_preparacion,
+        'cliente_llego', FALSE
+    );
+
+END;
+
+$function$;
+
+CREATE OR REPLACE FUNCTION public.crear_pedido_con_seguimiento(p_nombre text, p_celular text, p_metodo_pago text, p_items jsonb, p_observaciones text DEFAULT NULL::text, p_tipo_entrega text DEFAULT 'retiro'::text, p_momento_preparacion text DEFAULT 'inmediato'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+
+DECLARE
+    v_respuesta JSONB;
+    v_pedido_id UUID;
+    v_token UUID;
+
+BEGIN
+
+    -- Crear el pedido utilizando la función existente.
+
+    v_respuesta := public.crear_pedido(
+        p_nombre,
+        p_celular,
+        p_metodo_pago,
+        p_items,
+        p_observaciones,
+        p_tipo_entrega,
+        p_momento_preparacion
+    );
+
+    IF COALESCE((v_respuesta ->> 'exito')::BOOLEAN, FALSE) = FALSE THEN
+        RAISE EXCEPTION 'No se pudo registrar el pedido.';
+    END IF;
+
+    v_pedido_id := (v_respuesta ->> 'pedido_id')::UUID;
+
+    SELECT seguimiento_token
+    INTO v_token
+    FROM public.pedidos
+    WHERE id = v_pedido_id;
+
+    IF v_token IS NULL THEN
+        RAISE EXCEPTION 'No se pudo generar el acceso de seguimiento.';
+    END IF;
+
+    -- Incorporar el token a la respuesta original.
+
+    RETURN v_respuesta ||
+        jsonb_build_object(
+            'seguimiento_token', v_token
+        );
+
+END;
+
+$function$;
+
+CREATE OR REPLACE FUNCTION public.es_admin_activo()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.perfiles_admin AS p
+        WHERE p.id = (SELECT auth.uid())
+          AND p.activo = TRUE
+    );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.obtener_mis_pedidos(p_pedidos jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+
+DECLARE
+    v_resultado JSONB;
+
+BEGIN
+
+    IF p_pedidos IS NULL
+       OR jsonb_typeof(p_pedidos) <> 'array' THEN
+
+        RAISE EXCEPTION 'La lista de pedidos no es válida.';
+
+    END IF;
+
+    IF jsonb_array_length(p_pedidos) > 100 THEN
+        RAISE EXCEPTION 'Se excedió el límite de pedidos.';
+    END IF;
+
+    -- Validar que cada elemento contenga ambos identificadores.
+
+    IF EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(p_pedidos) AS elemento(item)
+        WHERE
+            NOT (elemento.item ? 'pedido_id')
+            OR NOT (elemento.item ? 'seguimiento_token')
+            OR NULLIF(elemento.item ->> 'pedido_id', '') IS NULL
+            OR NULLIF(elemento.item ->> 'seguimiento_token', '') IS NULL
+    ) THEN
+
+        RAISE EXCEPTION 'Hay identificadores de seguimiento incompletos.';
+
+    END IF;
+
+    -- Consultar exclusivamente los pedidos que coincidan
+    -- con su identificador y token privado.
+
+    SELECT COALESCE(
+        jsonb_agg(
+            jsonb_build_object(
+                'id', p.id,
+                'codigo', p.codigo,
+                'estado', p.estado,
+                'metodo_pago', p.metodo_pago,
+                'estado_pago', p.estado_pago,
+                'tipo_entrega', p.tipo_entrega,
+                'momento_preparacion', p.momento_preparacion,
+                'cliente_llego', p.cliente_llego,
+                'subtotal', p.subtotal,
+                'total', p.total,
+                'observaciones', p.observaciones,
+                'created_at', p.created_at,
+                'updated_at', p.updated_at,
+                'detalles', COALESCE(d.productos, '[]'::JSONB)
+            )
+            ORDER BY p.created_at DESC
+        ),
+        '[]'::JSONB
+    )
+    INTO v_resultado
+    FROM public.pedidos AS p
+
+    INNER JOIN jsonb_array_elements(p_pedidos) AS elemento(item)
+        ON p.id = (elemento.item ->> 'pedido_id')::UUID
+        AND p.seguimiento_token =
+            (elemento.item ->> 'seguimiento_token')::UUID
+
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'producto_id', dp.producto_id,
+                'variante_id', dp.variante_id,
+                'nombre_producto', dp.nombre_producto,
+                'nombre_variante', dp.nombre_variante,
+                'seccion', dp.seccion,
+                'cantidad', dp.cantidad,
+                'precio_unitario', dp.precio_unitario,
+                'subtotal', dp.subtotal
+            )
+        ) AS productos
+        FROM public.detalle_pedidos AS dp
+        WHERE dp.pedido_id = p.id
+    ) AS d ON TRUE;
+
+    RETURN v_resultado;
+
+END;
+
+$function$;
+
+CREATE OR REPLACE FUNCTION public.rls_auto_enable()
+ RETURNS event_trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+DECLARE
+  cmd record;
+  tbl name;
+BEGIN
+  FOR cmd IN
+    SELECT *
+    FROM pg_event_trigger_ddl_commands()
+    WHERE command_tag IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+      AND object_type IN ('table','partitioned table')
+  LOOP
+     IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN
+      BEGIN
+        SELECT c.relname INTO tbl FROM pg_catalog.pg_class c WHERE c.oid = cmd.objid;
+        EXECUTE format('alter table if exists %I.%I enable row level security', cmd.schema_name, tbl);
+        RAISE LOG 'rls_auto_enable: enabled RLS on %', cmd.object_identity;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE LOG 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;
+      END;
+     ELSE
+        RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;
+     END IF;
+  END LOOP;
+END;
+$function$;

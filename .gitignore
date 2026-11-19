@@ -1,28 +1,32 @@
-# Dart / Flutter
-.dart_tool/
-.packages
-.pub/
-.pub-cache/
-build/
-.flutter-plugins
-.flutter-plugins-dependencies
-.metadata
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/build/
+**/coverage/
+**/.pub-cache/
+**/.pub/
+**/doc/api/
+**/*.iml
+**/.idea/
+**/.metadata
+**/ephemeral/
+**/.gradle/
+**/local.properties
 
-# IDE
-.idea/
-.vscode/
-*.iml
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Local environment and secrets
+# Secrets / local configuration
 .env
 .env.*
 !.env.example
-*.jks
-*.keystore
-key.properties
-secrets/
+**/*.jks
+**/*.keystore
+**/key.properties
+**/secrets/
+**/*service_role*
+**/*secret*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

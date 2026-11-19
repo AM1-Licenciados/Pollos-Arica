@@ -1,0 +1,21 @@
+esquema,tabla,indice,definicion
+public,categorias,categorias_nombre_key,CREATE UNIQUE INDEX categorias_nombre_key ON public.categorias USING btree (nombre)
+public,categorias,categorias_pkey,CREATE UNIQUE INDEX categorias_pkey ON public.categorias USING btree (id)
+public,clientes,clientes_pkey,CREATE UNIQUE INDEX clientes_pkey ON public.clientes USING btree (id)
+public,clientes,idx_clientes_celular,CREATE INDEX idx_clientes_celular ON public.clientes USING btree (celular)
+public,clientes,ux_clientes_celular,CREATE UNIQUE INDEX ux_clientes_celular ON public.clientes USING btree (celular)
+public,configuracion_negocio,configuracion_negocio_pkey,CREATE UNIQUE INDEX configuracion_negocio_pkey ON public.configuracion_negocio USING btree (id)
+public,detalle_pedidos,detalle_pedidos_pkey,CREATE UNIQUE INDEX detalle_pedidos_pkey ON public.detalle_pedidos USING btree (id)
+public,detalle_pedidos,idx_detalle_pedido,CREATE INDEX idx_detalle_pedido ON public.detalle_pedidos USING btree (pedido_id)
+public,pedidos,idx_pedidos_cliente,CREATE INDEX idx_pedidos_cliente ON public.pedidos USING btree (cliente_id)
+public,pedidos,idx_pedidos_estado,CREATE INDEX idx_pedidos_estado ON public.pedidos USING btree (estado)
+public,pedidos,idx_pedidos_fecha,CREATE INDEX idx_pedidos_fecha ON public.pedidos USING btree (created_at DESC)
+public,pedidos,pedidos_codigo_key,CREATE UNIQUE INDEX pedidos_codigo_key ON public.pedidos USING btree (codigo)
+public,pedidos,pedidos_pkey,CREATE UNIQUE INDEX pedidos_pkey ON public.pedidos USING btree (id)
+public,perfiles_admin,perfiles_admin_pkey,CREATE UNIQUE INDEX perfiles_admin_pkey ON public.perfiles_admin USING btree (id)
+public,productos,idx_productos_catalogo,"CREATE INDEX idx_productos_catalogo ON public.productos USING btree (activo, disponible, orden)"
+public,productos,idx_productos_categoria,CREATE INDEX idx_productos_categoria ON public.productos USING btree (categoria_id)
+public,productos,productos_pkey,CREATE UNIQUE INDEX productos_pkey ON public.productos USING btree (id)
+public,variantes_producto,idx_variantes_producto,CREATE INDEX idx_variantes_producto ON public.variantes_producto USING btree (producto_id)
+public,variantes_producto,variantes_producto_nombre_unico,"CREATE UNIQUE INDEX variantes_producto_nombre_unico ON public.variantes_producto USING btree (producto_id, nombre)"
+public,variantes_producto,variantes_producto_pkey,CREATE UNIQUE INDEX variantes_producto_pkey ON public.variantes_producto USING btree (id)
