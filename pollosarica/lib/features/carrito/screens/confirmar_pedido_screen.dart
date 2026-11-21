@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../catalogo/screens/catalogo_screen.dart';
 import '../../cliente/services/cliente_local_service.dart';
+import '../../cliente/services/autenticacion_service.dart';
 import '../data/carrito_service.dart';
 import '../data/pedido_service.dart';
 
@@ -50,14 +51,30 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
 
   Future<void> _cargarCliente() async {
     try {
-      final cliente =
-          await ClienteLocalService.instance.obtenerCliente();
+      final perfil =
+          await AutenticacionService.instance.obtenerPerfilCliente();
 
       if (!mounted) return;
 
-      if (cliente != null) {
-        _nombreController.text = cliente['nombre'] ?? '';
-        _celularController.text = cliente['telefono'] ?? '';
+      if (perfil != null) {
+        final nombre = (perfil['nombre'] as String? ?? '').trim();
+        final apellido = (perfil['apellido'] as String? ?? '').trim();
+
+        _nombreController.text = [nombre, apellido]
+            .where((parte) => parte.isNotEmpty)
+            .join(' ');
+        _celularController.text = perfil['telefono'] as String? ?? '';
+      } else {
+        // Compatibilidad con datos locales de instalaciones anteriores.
+        final cliente =
+            await ClienteLocalService.instance.obtenerCliente();
+
+        if (!mounted) return;
+
+        if (cliente != null) {
+          _nombreController.text = cliente['nombre'] ?? '';
+          _celularController.text = cliente['telefono'] ?? '';
+        }
       }
     } catch (_) {
       if (!mounted) return;
