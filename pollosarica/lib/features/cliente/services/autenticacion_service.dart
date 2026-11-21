@@ -47,6 +47,19 @@ class AutenticacionService {
     );
   }
 
+  Future<Map<String, dynamic>?> obtenerPerfilCliente() async {
+    final usuario = usuarioActual;
+    if (usuario == null) return null;
+
+    final perfil = await _supabase
+        .from('perfiles_clientes')
+        .select('nombre, apellido, correo, telefono, foto_url')
+        .eq('auth_user_id', usuario.id)
+        .maybeSingle();
+
+    return perfil;
+  }
+
   Future<void> cerrarSesion() async {
     await _supabase.auth.signOut();
   }
