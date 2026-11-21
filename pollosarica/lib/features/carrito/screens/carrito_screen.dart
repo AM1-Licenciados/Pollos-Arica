@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../cliente/services/autenticacion_service.dart';
+import '../../cliente/screens/autenticacion_screen.dart';
 import '../data/carrito_service.dart';
 import 'confirmar_pedido_screen.dart';
 
@@ -78,7 +80,19 @@ class CarritoScreen extends StatelessWidget {
                       cantidad: carrito.cantidadTotal,
                       total: carrito.total,
                       formatearPrecio: _formatearPrecio,
-                      onContinuar: () {
+                      onContinuar: () async {
+                        if (!AutenticacionService.instance.estaAutenticado) {
+                          final resultado = await Navigator.of(context).push<bool>(
+                            MaterialPageRoute(
+                              builder: (_) => const AutenticacionScreen(),
+                            ),
+                          );
+                          if (resultado != true ||
+                              !AutenticacionService.instance.estaAutenticado) {
+                            return;
+                          }
+                        }
+                        if (!context.mounted) return;
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const ConfirmarPedidoScreen(),
