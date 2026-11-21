@@ -2,6 +2,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../cliente/services/cliente_local_service.dart';
+import '../../cliente/services/autenticacion_service.dart';
 import 'carrito_service.dart';
 
 class PedidoCreado {
@@ -43,6 +44,10 @@ class PedidoService {
     required String momentoPreparacion,
     String? observaciones,
   }) async {
+    if (!AutenticacionService.instance.estaAutenticado) {
+      throw Exception('Debes iniciar sesión para realizar un pedido.');
+    }
+
     final carrito = CarritoService.instance;
 
     final momentoFinal = tipoEntrega == 'retiro'
