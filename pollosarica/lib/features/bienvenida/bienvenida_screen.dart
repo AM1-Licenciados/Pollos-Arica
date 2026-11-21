@@ -3,8 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../catalogo/screens/catalogo_screen.dart';
-import '../cliente/screens/nombre_cliente_screen.dart';
-import '../cliente/services/cliente_local_service.dart';
 import '../negocio/screens/ficha_negocio_screen.dart';
 import '../negocio/services/configuracion_negocio_service.dart';
 
@@ -24,23 +22,8 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
     setState(() => _comprobandoCliente = true);
 
     try {
-      final cliente =
-          await ClienteLocalService.instance.obtenerCliente();
-      if (!mounted) return;
-
-      if (cliente != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const CatalogoScreen()),
-        );
-      } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NombreClienteScreen()),
-        );
-      }
-    } catch (_) {
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const NombreClienteScreen()),
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const CatalogoScreen()),
       );
     } finally {
       if (mounted) setState(() => _comprobandoCliente = false);
