@@ -7,6 +7,8 @@ import '../data/producto_service.dart';
 import '../models/categoria.dart';
 import '../models/producto.dart';
 import '../../carrito/screens/carrito_screen.dart';
+import '../../cliente/services/autenticacion_service.dart';
+import '../../cliente/screens/autenticacion_screen.dart';
 import '../../pedidos/screens/mis_pedidos_screen.dart';
 import 'detalle_producto_screen.dart';
 
@@ -452,6 +454,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Future<void> _abrirCarrito() async {
+    if (!AutenticacionService.instance.estaAutenticado) {
+      final resultado = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => const AutenticacionScreen(),
+        ),
+      );
+
+      if (resultado != true ||
+          !AutenticacionService.instance.estaAutenticado ||
+          !mounted) {
+        return;
+      }
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const CarritoScreen(),
