@@ -236,7 +236,6 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
         final correo = perfil['correo']?.toString() ??
             AutenticacionService.instance.usuarioActual?.email ??
             '';
-        final telefono = perfil['telefono']?.toString() ?? '';
         final fotoUrl = perfil['foto_url']?.toString();
 
         return RefreshIndicator(
@@ -388,7 +387,6 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                   ),
                 ),
               ),
-              if (telefono.isNotEmpty) const SizedBox(height: 4),
             ],
           ),
         );
