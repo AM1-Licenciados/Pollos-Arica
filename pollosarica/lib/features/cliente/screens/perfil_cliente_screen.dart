@@ -42,74 +42,204 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
       ..showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
-  Future<void> _mostrarDatos(Map<String, dynamic> perfil) async {
-    final nombre = [
-      perfil['nombre'],
-      perfil['apellido'],
-    ].where((valor) => valor != null && valor.toString().trim().isNotEmpty)
-        .join(' ');
+  Future<void> _editarDatos(Map<String, dynamic> perfil) async {
+    final nombreController =
+        TextEditingController(text: perfil['nombre']?.toString() ?? '');
+    final apellidoController =
+        TextEditingController(text: perfil['apellido']?.toString() ?? '');
+    final telefonoController =
+        TextEditingController(text: perfil['telefono']?.toString() ?? '');
+    final formKey = GlobalKey<FormState>();
 
-    await showModalBottomSheet<void>(
+    final guardar = await showDialog<bool>(
       context: context,
-      backgroundColor: AppTheme.crema,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Mis datos personales',
-                style: TextStyle(
-                  color: AppTheme.marron,
-                  fontSize: 21,
-                  fontWeight: FontWeight.bold,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.crema,
+        title: const Text('Mis datos personales'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nombreController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(labelText: 'Nombre'),
+                  validator: (valor) => valor == null || valor.trim().isEmpty
+                      ? 'Ingresa tu nombre.'
+                      : null,
                 ),
-              ),
-              const SizedBox(height: 18),
-              _DatoPerfil(etiqueta: 'Nombre completo', valor: nombre),
-              _DatoPerfil(
-                etiqueta: 'Correo electrónico',
-                valor: perfil['correo']?.toString() ?? 'No disponible',
-              ),
-              _DatoPerfil(
-                etiqueta: 'Teléfono',
-                valor: perfil['telefono']?.toString() ?? 'No disponible',
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'La edición de estos datos estará disponible próximamente.',
-                style: TextStyle(
-                  color: AppTheme.textoSecundario,
-                  fontSize: 12,
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: apellidoController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(labelText: 'Apellido'),
+                  validator: (valor) => valor == null || valor.trim().isEmpty
+                      ? 'Ingresa tu apellido.'
+                      : null,
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: telefonoController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'Teléfono'),
+                  validator: (valor) {
+                    final digitos = (valor ?? '').replaceAll(
+                      RegExp(r'[^0-9]'),
+                      '',
+                    );
+                    if (digitos.length < 7 || digitos.length > 15) {
+                      return 'Ingresa un teléfono válido.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'El correo electrónico de la cuenta no se modifica desde aquí.',
+                  style: TextStyle(
+                    color: AppTheme.textoSecundario,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
       ),
     );
+
+    if (guardar == true && mounted) {
+      setState(() => _procesando = true);
+      try {
+        await AutenticacionService.instance.actualizarPerfilCliente(
+          nombre: nombreController.text,
+          apellido: apellidoController.text,
+          telefono: telefonoController.text,
+        );
+        await _recargar();
+        _mostrarMensaje('Tus datos se actualizaron correctamente.');
+      } catch (error) {
+        _mostrarMensaje(
+          error.toString().replaceFirst('Exception: ', ''),
+        );
+      } finally {
+        if (mounted) setState(() => _procesando = false);
+      }
+    }
+
+    nombreController.dispose();
+    apellidoController.dispose();
+    telefonoController.dispose();
   }
 
-  Future<void> _cambiarPassword(String correo) async {
+  Future<void> _cambiarPassword() async {
     if (_procesando) return;
-    setState(() => _procesando = true);
 
-    try {
-      await AutenticacionService.instance.enviarRecuperacion(correo);
-      _mostrarMensaje(
-        'Si el correo está registrado, recibirás un enlace para cambiar tu contraseña.',
-      );
-    } catch (_) {
-      _mostrarMensaje('No se pudo enviar el correo. Intenta nuevamente.');
-    } finally {
-      if (mounted) setState(() => _procesando = false);
+    final actualController = TextEditingController();
+    final nuevoController = TextEditingController();
+    final confirmarController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final cambiar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.crema,
+        title: const Text('Cambiar contraseña'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: actualController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña actual',
+                  ),
+                  validator: (valor) => valor == null || valor.isEmpty
+                      ? 'Ingresa tu contraseña actual.'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nuevoController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nueva contraseña',
+                  ),
+                  validator: (valor) => valor == null || valor.length < 8
+                      ? 'Usa al menos 8 caracteres.'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmarController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmar nueva contraseña',
+                  ),
+                  validator: (valor) => valor != nuevoController.text
+                      ? 'Las contraseñas no coinciden.'
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            child: const Text('Actualizar'),
+          ),
+        ],
+      ),
+    );
+
+    if (cambiar == true && mounted) {
+      setState(() => _procesando = true);
+      try {
+        await AutenticacionService.instance.cambiarPassword(
+          passwordActual: actualController.text,
+          passwordNuevo: nuevoController.text,
+        );
+        _mostrarMensaje('Tu contraseña se actualizó correctamente.');
+      } catch (error) {
+        _mostrarMensaje(
+          'No se pudo cambiar la contraseña. Verifica tu contraseña actual e inténtalo nuevamente.',
+        );
+      } finally {
+        if (mounted) setState(() => _procesando = false);
+      }
     }
+
+    actualController.dispose();
+    nuevoController.dispose();
+    confirmarController.dispose();
   }
 
   Future<void> _cerrarSesion() async {
@@ -318,8 +448,8 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                   _OpcionPerfil(
                     icono: Icons.person_outline_rounded,
                     titulo: 'Mis datos personales',
-                    subtitulo: 'Consulta tu nombre y teléfono',
-                    onTap: () => _mostrarDatos(perfil),
+                    subtitulo: 'Edita tu nombre y teléfono',
+                    onTap: () => _editarDatos(perfil),
                   ),
                   const _SeparadorPerfil(),
                   _OpcionPerfil(
@@ -335,7 +465,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                     icono: Icons.lock_outline_rounded,
                     titulo: 'Cambiar contraseña',
                     subtitulo: 'Recibe un enlace en tu correo',
-                    onTap: () => _cambiarPassword(correo),
+                    onTap: _cambiarPassword,
                   ),
                 ],
               ),
