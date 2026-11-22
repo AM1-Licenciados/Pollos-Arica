@@ -60,6 +60,43 @@ class AutenticacionService {
     return perfil;
   }
 
+  Future<void> actualizarPerfilCliente({
+    required String nombre,
+    required String apellido,
+    required String telefono,
+  }) async {
+    final usuario = usuarioActual;
+    if (usuario == null) {
+      throw Exception('Debes iniciar sesión para actualizar tu perfil.');
+    }
+
+    await _supabase
+        .from('perfiles_clientes')
+        .update({
+          'nombre': nombre.trim(),
+          'apellido': apellido.trim(),
+          'telefono': telefono.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('auth_user_id', usuario.id);
+  }
+
+  Future<void> cambiarPassword({
+    required String passwordActual,
+    required String passwordNuevo,
+  }) async {
+    if (usuarioActual == null) {
+      throw Exception('Debes iniciar sesión para cambiar tu contraseña.');
+    }
+
+    await _supabase.auth.updateUser(
+      UserAttributes(
+        password: passwordNuevo,
+        currentPassword: passwordActual,
+      ),
+    );
+  }
+
   Future<void> cerrarSesion() async {
     await _supabase.auth.signOut();
   }
