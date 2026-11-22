@@ -243,17 +243,17 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Container(
-                      width: 72,
-                      height: 72,
+                      height: 112,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppTheme.naranja.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(22),
                       ),
-                      child: const Icon(
-                        Icons.person_outline_rounded,
-                        size: 38,
-                        color: AppTheme.naranja,
+                      child: Image.asset(
+                        'assets/images/logo_pollos_arica.png',
+                        width: 230,
+                        height: 96,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 22),
