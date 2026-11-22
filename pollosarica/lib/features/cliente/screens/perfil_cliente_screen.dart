@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -146,6 +147,49 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
     nombreController.dispose();
     apellidoController.dispose();
     telefonoController.dispose();
+  }
+
+  Future<void> _seleccionarFoto() async {
+    if (_procesando) return;
+
+    try {
+      final imagen = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1200,
+        maxHeight: 1200,
+      );
+      if (imagen == null || !mounted) return;
+
+      final extension = imagen.name.split('.').last.toLowerCase();
+      const tipos = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'webp': 'image/webp',
+      };
+      final contentType = tipos[extension];
+
+      if (contentType == null) {
+        _mostrarMensaje('Selecciona una imagen JPG, PNG o WEBP.');
+        return;
+      }
+
+      setState(() => _procesando = true);
+      await AutenticacionService.instance.actualizarFotoPerfil(
+        bytes: await imagen.readAsBytes(),
+        extension: extension,
+        contentType: contentType,
+      );
+      await _recargar();
+      _mostrarMensaje('Tu fotografía se actualizó correctamente.');
+    } catch (error) {
+      _mostrarMensaje(
+        error.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
   }
 
   Future<void> _cambiarPassword() async {
@@ -379,9 +423,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                 child: Column(
                   children: [
                     GestureDetector(
-                      onTap: () => _mostrarMensaje(
-                        'La opción para subir una fotografía estará disponible en la siguiente etapa.',
-                      ),
+                      onTap: _seleccionarFoto,
                       child: Stack(
                         children: [
                           CircleAvatar(
@@ -456,9 +498,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                     icono: Icons.photo_camera_outlined,
                     titulo: 'Cambiar fotografía',
                     subtitulo: 'Personaliza tu perfil',
-                    onTap: () => _mostrarMensaje(
-                      'La carga de fotografías estará disponible en la siguiente etapa.',
-                    ),
+                    onTap: _seleccionarFoto,
                   ),
                   const _SeparadorPerfil(),
                   _OpcionPerfil(
