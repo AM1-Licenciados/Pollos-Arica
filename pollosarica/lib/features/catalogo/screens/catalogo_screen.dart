@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../cliente/screens/perfil_cliente_screen.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../data/categoria_service.dart';
 import '../data/producto_service.dart';
@@ -808,45 +810,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       return const MisPedidosScreen();
     }
 
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.person_outline_rounded,
-              size: 64,
-              color: AppTheme.naranja,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Mi perfil',
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.marron,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Aquí encontrarás tu información y opciones de cuenta.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.textoSecundario,
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Estamos preparando esta sección.',
-              style: TextStyle(
-                color: AppTheme.textoSecundario,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return PerfilClienteScreen(
+      onCerrarSesion: () {
+        if (!mounted) return;
+        setState(() => _paginaSeleccionada = 0);
+      },
     );
   }
 
