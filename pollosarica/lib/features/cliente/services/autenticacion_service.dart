@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AutenticacionService {
@@ -79,6 +81,55 @@ class AutenticacionService {
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('auth_user_id', usuario.id);
+  }
+
+  Future<String> actualizarFotoPerfil({
+    required Uint8List bytes,
+    required String extension,
+    required String contentType,
+  }) async {
+    final usuario = usuarioActual;
+    if (usuario == null) {
+      throw Exception('Debes iniciar sesión para cambiar tu fotografía.');
+    }
+
+    if (bytes.isEmpty || bytes.length > 2 * 1024 * 1024) {
+      throw Exception('La imagen debe pesar como máximo 2 MB.');
+    }
+
+    const extensionesPermitidas = {'jpg', 'jpeg', 'png', 'webp'};
+    if (!extensionesPermitidas.contains(extension.toLowerCase()) ||
+        !const {
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+        }.contains(contentType)) {
+      throw Exception('Usa una imagen JPG, PNG o WEBP.');
+    }
+
+    final ruta = '${usuario.id}/avatar.${extension.toLowerCase()}';
+    final storage = _supabase.storage.from('perfiles-clientes');
+
+    await storage.uploadBinary(
+      ruta,
+      bytes,
+      fileOptions: FileOptions(
+        contentType: contentType,
+        upsert: true,
+      ),
+    );
+
+    final url = '${storage.getPublicUrl(ruta)}?v=${DateTime.now().millisecondsSinceEpoch}';
+
+    await _supabase
+        .from('perfiles_clientes')
+        .update({
+          'foto_url': url,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('auth_user_id', usuario.id);
+
+    return url;
   }
 
   Future<void> cambiarPassword({
