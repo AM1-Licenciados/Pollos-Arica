@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart' as stt_result;
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../cliente/screens/perfil_cliente_screen.dart';
 
@@ -26,6 +28,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   final ProductoService _productoService = ProductoService();
   final TextEditingController _busquedaController =
       TextEditingController();
+  final stt.SpeechToText _reconocimientoVoz = stt.SpeechToText();
+
+  bool _vozDisponible = false;
+  bool _escuchando = false;
+  String? _localeVoz;
+  String? _mensajeVoz;
 
   late Future<_DatosCatalogo> _datosFuture;
 
@@ -37,12 +45,150 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   void initState() {
     super.initState();
     _datosFuture = _cargarCatalogo();
+    _inicializarReconocimientoVoz();
   }
 
   @override
   void dispose() {
+    _reconocimientoVoz.cancel();
     _busquedaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _inicializarReconocimientoVoz() async {
+    try {
+      final disponible = await _reconocimientoVoz.initialize(
+        onStatus: (estado) {
+          if (!mounted) return;
+
+          setState(() {
+            _escuchando = estado == 'listening';
+          });
+        },
+        onError: (error) {
+          if (!mounted) return;
+
+          setState(() {
+            _escuchando = false;
+            _mensajeVoz =
+                'No se pudo reconocer la voz. Revisa el micrófono e intenta nuevamente.';
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      String? localeEspanol;
+
+      if (disponible) {
+        final locales = await _reconocimientoVoz.locales();
+        final localesEspanol = locales.where((locale) {
+          final codigo = locale.localeId.toLowerCase().replaceAll('-', '_');
+          return codigo.startsWith('es_') || codigo == 'es';
+        }).toList();
+
+        for (final locale in localesEspanol) {
+          final codigo = locale.localeId.toLowerCase().replaceAll('-', '_');
+          if (codigo == 'es_bo') {
+            localeEspanol = locale.localeId;
+            break;
+          }
+        }
+
+        localeEspanol ??= localesEspanol.isNotEmpty
+            ? localesEspanol.first.localeId
+            : null;
+      }
+
+      setState(() {
+        _vozDisponible = disponible;
+        _localeVoz = localeEspanol;
+        _mensajeVoz = disponible
+            ? null
+            : 'La búsqueda por voz no está disponible en este navegador o dispositivo.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _vozDisponible = false;
+        _escuchando = false;
+        _mensajeVoz = 'No se pudo iniciar el reconocimiento de voz.';
+      });
+    }
+  }
+
+  String _normalizarTexto(String texto) {
+    return texto
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp('[áàäâ]'), 'a')
+        .replaceAll(RegExp('[éèëê]'), 'e')
+        .replaceAll(RegExp('[íìïî]'), 'i')
+        .replaceAll(RegExp('[óòöô]'), 'o')
+        .replaceAll(RegExp('[úùüû]'), 'u')
+        .replaceAll('ñ', 'n');
+  }
+
+  Future<void> _alternarReconocimientoVoz() async {
+    if (!_vozDisponible) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La búsqueda por voz no está disponible en este dispositivo.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_reconocimientoVoz.isListening) {
+      await _reconocimientoVoz.stop();
+      if (!mounted) return;
+      setState(() => _escuchando = false);
+      return;
+    }
+
+    setState(() {
+      _mensajeVoz = null;
+      _busquedaController.clear();
+      _busqueda = '';
+      _escuchando = true;
+    });
+
+    try {
+      await _reconocimientoVoz.listen(
+        onResult: _alRecibirResultadoVoz,
+        localeId: _localeVoz,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _escuchando = _reconocimientoVoz.isListening;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _escuchando = false;
+        _mensajeVoz = 'No se pudo activar el micrófono. Comprueba los permisos.';
+      });
+    }
+  }
+
+  void _alRecibirResultadoVoz(stt_result.SpeechRecognitionResult resultado) {
+    if (!mounted) return;
+
+    final textoReconocido = resultado.recognizedWords;
+
+    setState(() {
+      _busquedaController.value = TextEditingValue(
+        text: textoReconocido,
+        selection: TextSelection.collapsed(offset: textoReconocido.length),
+      );
+      _busqueda = textoReconocido;
+      _mensajeVoz = null;
+    });
   }
 
   Future<_DatosCatalogo> _cargarCatalogo() async {
@@ -69,7 +215,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     List<Producto> productos,
     List<Categoria> categorias,
   ) {
-    final consulta = _busqueda.toLowerCase().trim();
+    final consulta = _normalizarTexto(_busqueda);
 
     return productos.where((producto) {
       final coincideCategoria =
@@ -84,9 +230,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           categoria.isNotEmpty ? categoria.first.nombre : '';
 
       final coincideBusqueda = consulta.isEmpty ||
-          producto.nombre.toLowerCase().contains(consulta) ||
-          nombreCategoria.toLowerCase().contains(consulta) ||
-          (producto.seccion ?? '').toLowerCase().contains(consulta);
+          _normalizarTexto(producto.nombre).contains(consulta) ||
+          _normalizarTexto(nombreCategoria).contains(consulta) ||
+          _normalizarTexto(producto.seccion ?? '').contains(consulta);
 
       return coincideCategoria && coincideBusqueda;
     }).toList();
@@ -591,44 +737,89 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Widget _construirBuscador() {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: TextField(
-        controller: _busquedaController,
-        onChanged: (valor) {
-          setState(() {
-            _busqueda = valor;
-          });
-        },
-        decoration: InputDecoration(
-          hintText: 'Buscar hamburguesas, milanesas...',
-          hintStyle: const TextStyle(
-            color: Colors.grey,
-            fontSize: 13,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
           ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppTheme.naranja,
+          child: TextField(
+            controller: _busquedaController,
+            onChanged: (valor) {
+              setState(() {
+                _busqueda = valor;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Buscar hamburguesas, milanesas...',
+              hintStyle: const TextStyle(
+                color: Colors.grey,
+                fontSize: 13,
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: AppTheme.naranja,
+              ),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_busqueda.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Limpiar búsqueda',
+                      onPressed: () {
+                        _busquedaController.clear();
+                        setState(() {
+                          _busqueda = '';
+                        });
+                      },
+                      icon: const Icon(Icons.close),
+                    ),
+                  IconButton(
+                    tooltip: _escuchando
+                        ? 'Detener búsqueda por voz'
+                        : 'Buscar por voz',
+                    onPressed: _vozDisponible
+                        ? _alternarReconocimientoVoz
+                        : null,
+                    icon: Icon(
+                      _escuchando
+                          ? Icons.mic_rounded
+                          : Icons.mic_none_rounded,
+                      color: _escuchando
+                          ? Colors.red
+                          : _vozDisponible
+                              ? AppTheme.naranja
+                              : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 88,
+                minHeight: 48,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+            ),
           ),
-          suffixIcon: _busqueda.isEmpty
-              ? null
-              : IconButton(
-                  onPressed: () {
-                    _busquedaController.clear();
-                    setState(() {
-                      _busqueda = '';
-                    });
-                  },
-                  icon: const Icon(Icons.close),
-                ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15),
         ),
-      ),
+        if (_escuchando || _mensajeVoz != null) ...[
+          const SizedBox(height: 7),
+          Text(
+            _escuchando
+                ? 'Escuchando... di el nombre de un producto'
+                : _mensajeVoz!,
+            style: TextStyle(
+              color: _escuchando ? AppTheme.naranja : AppTheme.textoSecundario,
+              fontSize: 11,
+              fontWeight: _escuchando ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
