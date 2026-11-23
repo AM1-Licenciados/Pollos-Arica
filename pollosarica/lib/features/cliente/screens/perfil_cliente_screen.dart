@@ -417,7 +417,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
           onRefresh: _recargar,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(18, 22, 18, 30),
+            padding: const EdgeInsets.fromLTRB(18, 22, 18, 125),
             children: [
               Center(
                 child: Column(
@@ -537,24 +537,26 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              OutlinedButton.icon(
+              ElevatedButton.icon(
                 onPressed: _procesando ? null : _cerrarSesion,
                 icon: _procesando
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.logout_rounded),
                 label: const Text('Cerrar sesión'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFB3261E),
-                  backgroundColor: Colors.white,
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFB3261E),
+                  disabledForegroundColor: Colors.white70,
+                  disabledBackgroundColor: const Color(0xFFB3261E).withValues(alpha: 0.65),
                   minimumSize: const Size.fromHeight(52),
-                  side: const BorderSide(color: Color(0xFFE8D8C8)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
                 ),
               ),
             ],
