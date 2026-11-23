@@ -819,7 +819,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            AspectRatio(
+              aspectRatio: 1.25,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -887,6 +888,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
+
   Widget _construirImagen(String? url) {
     if (url == null || url.trim().isEmpty) {
       return _imagenPlaceholder();
@@ -894,6 +896,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
     return Image.network(
       url,
+      width: double.infinity,
+      height: double.infinity,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return _imagenPlaceholder();
