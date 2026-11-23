@@ -225,12 +225,6 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.crema,
-      appBar: AppBar(
-        backgroundColor: AppTheme.crema,
-        foregroundColor: AppTheme.marron,
-        elevation: 0,
-        title: Text(_registro ? 'Crear cuenta' : 'Iniciar sesión'),
-      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -250,23 +244,12 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      _registro ? 'Únete a Pollos Arica' : '¡Qué bueno verte!',
+                      _registro ? 'Crear cuenta' : 'Inicia sesión',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppTheme.marron,
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _registro
-                          ? 'Crea tu cuenta para continuar con tus pedidos.'
-                          : 'Ingresa a tu cuenta para continuar con tu pedido.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppTheme.textoSecundario,
-                        height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -353,9 +336,16 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: _cargando ? null : _recuperarPassword,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.naranja,
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ),
+                    if (!_registro) const SizedBox(height: 4),
                     const SizedBox(height: 18),
                     SizedBox(
                       height: 54,
@@ -379,25 +369,87 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    TextButton(
-                      onPressed: _cargando
-                          ? null
-                          : () => setState(() => _registro = !_registro),
-                      child: Text(
-                        _registro
-                            ? '¿Ya tienes cuenta? Inicia sesión'
-                            : '¿No tienes cuenta? Regístrate',
-                        textAlign: TextAlign.center,
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: AppTheme.naranja.withValues(alpha: 0.42),
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            _registro
+                                ? '¿Ya tienes una cuenta?'
+                                : '¿No puedes iniciar sesión?',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.naranja,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: AppTheme.naranja.withValues(alpha: 0.42),
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: _cargando
+                            ? null
+                            : () => setState(() => _registro = !_registro),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.naranja,
+                          side: const BorderSide(
+                            color: AppTheme.naranja,
+                            width: 1.4,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          _registro ? 'Iniciar sesión' : 'Crear cuenta',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Tu información se utilizará para gestionar tus pedidos.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppTheme.textoSecundario,
-                        fontSize: 12,
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 42,
+                      child: Center(
+                        child: TextButton(
+                          onPressed: _cargando
+                              ? null
+                              : () => Navigator.of(context).maybePop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textoSecundario,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                          ),
+                          child: const Text(
+                            'Volver',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

@@ -13,6 +13,7 @@ class MisPedidosScreen extends StatefulWidget {
 
 class _MisPedidosScreenState extends State<MisPedidosScreen> {
   late Future<List<PedidoCliente>> _pedidosFuture;
+  String _filtroSeleccionado = 'Todos';
 
   @override
   void initState() {
@@ -32,6 +33,22 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     });
 
     await nuevoFuture;
+  }
+
+  bool _estaEnCurso(PedidoCliente pedido) {
+    return {
+      PedidoEstadosCliente.pendiente,
+      PedidoEstadosCliente.aceptado,
+      PedidoEstadosCliente.enPreparacion,
+      PedidoEstadosCliente.listo,
+    }.contains(pedido.estado);
+  }
+
+  List<PedidoCliente> _filtrarPedidos(List<PedidoCliente> pedidos) {
+    if (_filtroSeleccionado == 'En curso') {
+      return pedidos.where(_estaEnCurso).toList();
+    }
+    return pedidos;
   }
 
   Color _colorEstado(String estado) {
@@ -158,24 +175,131 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           }
 
           final pedidos = snapshot.data ?? [];
-
-          if (pedidos.isEmpty) {
-            return _construirVacio();
-          }
+          final pedidosFiltrados = _filtrarPedidos(pedidos);
 
           return RefreshIndicator(
             color: AppTheme.naranja,
             onRefresh: _actualizarPedidos,
-            child: ListView.builder(
+            child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-              itemCount: pedidos.length,
-              itemBuilder: (context, index) {
-                return _construirTarjeta(pedidos[index]);
-              },
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _construirFiltros(),
+                  ),
+                ),
+                if (pedidos.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _construirVacio(),
+                  )
+                else if (pedidosFiltrados.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _construirVacioEnCurso(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) =>
+                            _construirTarjeta(pedidosFiltrados[index]),
+                        childCount: pedidosFiltrados.length,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _construirFiltros() {
+    return Row(
+      children: [
+        _construirOpcionFiltro('Todos'),
+        const SizedBox(width: 10),
+        _construirOpcionFiltro('En curso'),
+      ],
+    );
+  }
+
+  Widget _construirOpcionFiltro(String etiqueta) {
+    final seleccionado = _filtroSeleccionado == etiqueta;
+
+    return ChoiceChip(
+      label: Text(etiqueta),
+      selected: seleccionado,
+      showCheckmark: false,
+      onSelected: (_) {
+        setState(() {
+          _filtroSeleccionado = etiqueta;
+        });
+      },
+      backgroundColor: Colors.white,
+      selectedColor: AppTheme.naranja,
+      side: BorderSide(
+        color: seleccionado
+            ? AppTheme.naranja
+            : const Color(0xFFE8D8C8),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+      ),
+      labelStyle: TextStyle(
+        color: seleccionado ? Colors.white : AppTheme.marron,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+    );
+  }
+
+  Widget _construirVacioEnCurso() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE7D0),
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: const Icon(
+              Icons.hourglass_empty_rounded,
+              size: 42,
+              color: AppTheme.naranja,
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'No tienes pedidos en curso',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.marron,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Cuando realices un pedido, podrás seguir su preparación desde aquí.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              height: 1.5,
+              color: AppTheme.textoSecundario,
+            ),
+          ),
+          ],
+        ),
       ),
     );
   }
@@ -225,7 +349,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
   Widget _construirVacio() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(30),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

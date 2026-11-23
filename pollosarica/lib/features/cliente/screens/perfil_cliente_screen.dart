@@ -462,7 +462,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                     ),
                     const SizedBox(height: 13),
                     Text(
-                      nombre.isEmpty ? 'Cliente de Pollos Arica' : nombre,
+                      nombre.isEmpty ? 'Bienvenido' : nombre,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppTheme.marron,
@@ -510,7 +510,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              const _TituloSeccion(texto: 'Contacto'),
+              const _TituloSeccion(texto: 'Visítanos'),
               const SizedBox(height: 10),
               _TarjetaOpciones(
                 children: [
@@ -526,7 +526,13 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                       );
                     },
                   ),
-                  const _SeparadorPerfil(),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const _TituloSeccion(texto: 'Contáctanos'),
+              const SizedBox(height: 10),
+              _TarjetaOpciones(
+                children: [
                   _OpcionPerfil(
                     icono: Icons.chat_bubble_outline_rounded,
                     titulo: 'WhatsApp',
@@ -536,7 +542,7 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const _TarjetaRedesSociales(),
               const SizedBox(height: 24),
               ElevatedButton.icon(
@@ -545,7 +551,10 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.logout_rounded),
                 label: const Text('Cerrar sesión'),
@@ -556,9 +565,9 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                   disabledBackgroundColor: const Color(0xFFB3261E).withValues(alpha: 0.65),
                   minimumSize: const Size.fromHeight(52),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ],
@@ -806,44 +815,6 @@ class _SeparadorPerfil extends StatelessWidget {
       indent: 72,
       endIndent: 16,
       color: Color(0xFFF0E4D9),
-    );
-  }
-}
-
-class _DatoPerfil extends StatelessWidget {
-  final String etiqueta;
-  final String valor;
-
-  const _DatoPerfil({
-    required this.etiqueta,
-    required this.valor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            etiqueta,
-            style: const TextStyle(
-              color: AppTheme.textoSecundario,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 3),
-          SelectableText(
-            valor.isEmpty ? 'No disponible' : valor,
-            style: const TextStyle(
-              color: AppTheme.marron,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

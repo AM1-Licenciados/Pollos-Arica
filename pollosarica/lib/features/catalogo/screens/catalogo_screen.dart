@@ -1,4 +1,6 @@
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart' as stt_result;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -160,7 +162,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     try {
       await _reconocimientoVoz.listen(
         onResult: _alRecibirResultadoVoz,
-        localeId: _localeVoz,
+        listenOptions: stt.SpeechListenOptions(
+          localeId: _localeVoz,
+          pauseFor: const Duration(seconds: 2),
+          listenFor: const Duration(seconds: 15),
+          partialResults: true,
+          cancelOnError: true,
+        ),
       );
 
       if (!mounted) return;
@@ -188,7 +196,17 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       );
       _busqueda = textoReconocido;
       _mensajeVoz = null;
+
+      if (resultado.finalResult) {
+        _escuchando = false;
+      }
     });
+
+    // Un resultado final significa que la frase terminó.
+    // La pausa configurada también detiene sesiones sin resultado final inmediato.
+    if (resultado.finalResult) {
+      unawaited(_reconocimientoVoz.stop());
+    }
   }
 
   Future<_DatosCatalogo> _cargarCatalogo() async {
@@ -510,7 +528,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ),
             ),
           const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
+            child: SizedBox(height: 112),
           ),
         ],
       ),
@@ -567,6 +585,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     : ancho >= 550
                         ? 3
                         : 2;
+
                 const espacio = 12.0;
                 final anchoTarjeta =
                     (ancho - espacio * (columnas - 1)) / columnas;
@@ -623,12 +642,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Image.asset(
-              'assets/images/logo_pollos_arica.png',
-              width: 172,
-              height: 48,
-              alignment: Alignment.centerLeft,
-              fit: BoxFit.contain,
-            ),
+                'assets/images/logo_pollos_arica.png',
+                width: 172,
+                height: 48,
+                alignment: Alignment.centerLeft,
+                fit: BoxFit.contain,
               ),
             ],
           ),
@@ -680,43 +698,63 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 Icons.search,
                 color: AppTheme.naranja,
               ),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_busqueda.isNotEmpty)
+              suffixIcon: SizedBox(
+                width: 96,
+                height: 52,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_busqueda.isNotEmpty)
+                      IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        constraints: const BoxConstraints.tightFor(
+                          width: 40,
+                          height: 48,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () {
+                          _busquedaController.clear();
+                          setState(() {
+                            _busqueda = '';
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: AppTheme.textoSecundario,
+                          size: 20,
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 40),
                     IconButton(
-                      tooltip: 'Limpiar búsqueda',
-                      onPressed: () {
-                        _busquedaController.clear();
-                        setState(() {
-                          _busqueda = '';
-                        });
-                      },
-                      icon: const Icon(Icons.close),
+                      tooltip: _escuchando
+                          ? 'Detener búsqueda por voz'
+                          : 'Buscar por voz',
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      padding: EdgeInsets.zero,
+                      onPressed: _vozDisponible
+                          ? _alternarReconocimientoVoz
+                          : null,
+                      icon: Icon(
+                        _escuchando
+                            ? Icons.mic_rounded
+                            : Icons.mic_none_rounded,
+                        color: _escuchando
+                            ? Colors.red
+                            : _vozDisponible
+                                ? AppTheme.naranja
+                                : Colors.grey,
+                      ),
                     ),
-                  IconButton(
-                    tooltip: _escuchando
-                        ? 'Detener búsqueda por voz'
-                        : 'Buscar por voz',
-                    onPressed: _vozDisponible
-                        ? _alternarReconocimientoVoz
-                        : null,
-                    icon: Icon(
-                      _escuchando
-                          ? Icons.mic_rounded
-                          : Icons.mic_none_rounded,
-                      color: _escuchando
-                          ? Colors.red
-                          : _vozDisponible
-                              ? AppTheme.naranja
-                              : Colors.grey,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 88,
-                minHeight: 48,
+              suffixIconConstraints: const BoxConstraints.tightFor(
+                width: 96,
+                height: 52,
               ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 15),
@@ -932,9 +970,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
   Widget _construirNavegacion() {
     final destinos = [
-      (icono: Icons.home_outlined, iconoSeleccionado: Icons.home_rounded, etiqueta: 'Inicio'),
-      (icono: Icons.receipt_long_outlined, iconoSeleccionado: Icons.receipt_long_rounded, etiqueta: 'Mis pedidos'),
-      (icono: Icons.person_outline_rounded, iconoSeleccionado: Icons.person_rounded, etiqueta: 'Perfil'),
+      (
+        icono: Icons.home_outlined,
+        iconoSeleccionado: Icons.home_rounded,
+        etiqueta: 'Inicio',
+      ),
+      (
+        icono: Icons.receipt_long_outlined,
+        iconoSeleccionado: Icons.receipt_long_rounded,
+        etiqueta: 'Mis pedidos',
+      ),
+      (
+        icono: Icons.person_outline_rounded,
+        iconoSeleccionado: Icons.person_rounded,
+        etiqueta: 'Perfil',
+      ),
     ];
 
     return SafeArea(
@@ -961,26 +1011,37 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 children: List.generate(destinos.length, (index) {
                   final destino = destinos[index];
                   final seleccionado = _paginaSeleccionada == index;
+
                   return Expanded(
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(26),
-                        onTap: () => setState(() => _paginaSeleccionada = index),
+                        onTap: () {
+                          setState(() {
+                            _paginaSeleccionada = index;
+                          });
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOut,
                           decoration: BoxDecoration(
-                            color: seleccionado ? AppTheme.naranja.withValues(alpha: 0.10) : Colors.transparent,
+                            color: seleccionado
+                                ? AppTheme.naranja.withValues(alpha: 0.10)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(26),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                seleccionado ? destino.iconoSeleccionado : destino.icono,
+                                seleccionado
+                                    ? destino.iconoSeleccionado
+                                    : destino.icono,
                                 size: 22,
-                                color: seleccionado ? AppTheme.naranja : AppTheme.textoSecundario,
+                                color: seleccionado
+                                    ? AppTheme.naranja
+                                    : AppTheme.textoSecundario,
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -990,8 +1051,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   height: 1.1,
-                                  fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
-                                  color: seleccionado ? AppTheme.naranja : AppTheme.textoSecundario,
+                                  fontWeight: seleccionado
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  color: seleccionado
+                                      ? AppTheme.naranja
+                                      : AppTheme.textoSecundario,
                                 ),
                               ),
                             ],
