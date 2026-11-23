@@ -537,6 +537,8 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
                 ],
               ),
               const SizedBox(height: 24),
+              const _TarjetaRedesSociales(),
+              const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _procesando ? null : _cerrarSesion,
                 icon: _procesando
@@ -563,6 +565,146 @@ class _PerfilClienteScreenState extends State<PerfilClienteScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _TarjetaRedesSociales extends StatelessWidget {
+  const _TarjetaRedesSociales();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 19, 18, 17),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Pollos Arica',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.marron,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Síguenos en redes sociales',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.textoSecundario,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 17),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _BotonRedSocial(
+                etiqueta: 'Facebook',
+                color: const Color(0xFF1877F2),
+                icono: Icons.facebook_rounded,
+                url: 'https://www.facebook.com/profile.php?id=100094013976491',
+              ),
+              const SizedBox(width: 28),
+              _BotonRedSocial(
+                etiqueta: 'TikTok',
+                color: const Color(0xFF242424),
+                icono: Icons.music_note_rounded,
+                url: 'https://www.tiktok.com/@polleria_arica',
+              ),
+              const SizedBox(width: 28),
+              _BotonRedSocial(
+                etiqueta: 'Instagram',
+                color: const Color(0xFFD62976),
+                icono: Icons.camera_alt_outlined,
+                url: 'https://www.instagram.com/polleriaarica',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BotonRedSocial extends StatelessWidget {
+  final String etiqueta;
+  final Color color;
+  final IconData icono;
+  final String url;
+
+  const _BotonRedSocial({
+    required this.etiqueta,
+    required this.color,
+    required this.icono,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Abrir $etiqueta de Pollos Arica',
+      child: InkWell(
+        onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            final abierto = await launchUrl(
+              Uri.parse(url),
+              mode: LaunchMode.externalApplication,
+            );
+            if (!abierto) {
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  const SnackBar(
+                    content: Text('No se pudo abrir el enlace. Intenta nuevamente.'),
+                  ),
+                );
+            }
+          } catch (_) {
+            messenger
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text('No se pudo abrir el enlace. Intenta nuevamente.'),
+                ),
+              );
+          }
+        },
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Column(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icono, color: Colors.white, size: 25),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                etiqueta,
+                style: const TextStyle(
+                  color: AppTheme.marron,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
