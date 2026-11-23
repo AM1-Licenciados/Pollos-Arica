@@ -418,6 +418,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
         return Scaffold(
           backgroundColor: AppTheme.crema,
+          extendBody: true,
           body: SafeArea(
             bottom: false,
             child: _paginaSeleccionada == 0
@@ -444,19 +445,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
               child: _construirEncabezado(),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _construirPromocion(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: _construirBuscador(),
             ),
           ),
@@ -465,7 +460,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -524,12 +519,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
   Widget _construirGrupo(_GrupoProductos grupo) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 9),
             child: Row(
               children: [
                 Container(
@@ -562,44 +557,41 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ],
             ),
           ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final ancho = constraints.maxWidth;
-              final columnas = ancho >= 850
-                  ? 4
-                  : ancho >= 550
-                      ? 3
-                      : 2;
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final ancho = constraints.maxWidth;
+                final columnas = ancho >= 850
+                    ? 4
+                    : ancho >= 550
+                        ? 3
+                        : 2;
+                const espacio = 12.0;
+                final anchoTarjeta =
+                    (ancho - espacio * (columnas - 1)) / columnas;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: grupo.productos.length,
-                  gridDelegate:
-                      SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columnas,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 14,
-                    mainAxisExtent: 245,
-                  ),
-                  itemBuilder: (context, index) {
-                    final producto = grupo.productos[index];
-
-                    return _construirTarjetaProducto(
-                      producto,
-                      _precioDesde(producto),
+                return Wrap(
+                  spacing: espacio,
+                  runSpacing: 12,
+                  children: grupo.productos.map((producto) {
+                    return SizedBox(
+                      width: anchoTarjeta,
+                      child: _construirTarjetaProducto(
+                        producto,
+                        _precioDesde(producto),
+                      ),
                     );
-                  },
-                ),
-              );
-            },
+                  }).toList(),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
+
 
   Future<void> _abrirCarrito() async {
     if (!AutenticacionService.instance.estaAutenticado) {
@@ -630,29 +622,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '¡Hola! Bienvenido a',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textoSecundario,
-                ),
-              ),
-              const SizedBox(height: 3),
-              const Text(
-                'Pollos Arica',
-                style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.marron,
-                ),
-              ),
-              const SizedBox(height: 3),
-              const Text(
-                'Con el sazón de la casa',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textoSecundario,
-                ),
+              Image.asset(
+              'assets/images/logo_pollos_arica.png',
+              width: 172,
+              height: 48,
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.contain,
+            ),
               ),
             ],
           ),
@@ -676,65 +652,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  Widget _construirPromocion() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [
-            AppTheme.naranja,
-            AppTheme.naranjaClaro,
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '¡Bienvenido!',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'Algo delicioso\nte está esperando',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'Descubre nuestro menú',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.restaurant_rounded,
-            color: Colors.white,
-            size: 66,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _construirBuscador() {
     return Column(
@@ -1010,41 +927,81 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Widget _construirNavegacion() {
-    return NavigationBar(
-      backgroundColor: Colors.white,
-      indicatorColor: AppTheme.naranja.withValues(alpha: 0.13),
-      selectedIndex: _paginaSeleccionada,
-      onDestinationSelected: (index) {
-        setState(() {
-          _paginaSeleccionada = index;
-        });
-      },
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(
-            Icons.home_rounded,
-            color: AppTheme.naranja,
+    final destinos = [
+      (icono: Icons.home_outlined, iconoSeleccionado: Icons.home_rounded, etiqueta: 'Inicio'),
+      (icono: Icons.receipt_long_outlined, iconoSeleccionado: Icons.receipt_long_rounded, etiqueta: 'Mis pedidos'),
+      (icono: Icons.person_outline_rounded, iconoSeleccionado: Icons.person_rounded, etiqueta: 'Perfil'),
+    ];
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 4, 22, 8),
+        child: SizedBox(
+          height: 62,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.marron.withValues(alpha: 0.14),
+                  blurRadius: 18,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+              child: Row(
+                children: List.generate(destinos.length, (index) {
+                  final destino = destinos[index];
+                  final seleccionado = _paginaSeleccionada == index;
+                  return Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(26),
+                        onTap: () => setState(() => _paginaSeleccionada = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          decoration: BoxDecoration(
+                            color: seleccionado ? AppTheme.naranja.withValues(alpha: 0.10) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                seleccionado ? destino.iconoSeleccionado : destino.icono,
+                                size: 22,
+                                color: seleccionado ? AppTheme.naranja : AppTheme.textoSecundario,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                destino.etiqueta,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  height: 1.1,
+                                  fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
+                                  color: seleccionado ? AppTheme.naranja : AppTheme.textoSecundario,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
-          label: 'Inicio',
         ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(
-            Icons.receipt_long_rounded,
-            color: AppTheme.naranja,
-          ),
-          label: 'Mis pedidos',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline_rounded),
-          selectedIcon: Icon(
-            Icons.person_rounded,
-            color: AppTheme.naranja,
-          ),
-          label: 'Perfil',
-        ),
-      ],
+      ),
     );
   }
 }
