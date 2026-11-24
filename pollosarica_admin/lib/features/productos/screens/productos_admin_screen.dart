@@ -57,6 +57,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             text: variante.precio.toStringAsFixed(2),
           );
         }
+        if (producto.variantes.isEmpty) {
+          _precios[producto.id] = TextEditingController();
+        }
       }
 
       setState(() => _productos = productos);
@@ -93,7 +96,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
       if (!mounted) return;
       controller?.text = precio.toStringAsFixed(2);
-      _mensaje('Precio actualizado: Bs \${precio.toStringAsFixed(2)}');
+      _mensaje('Precio actualizado: Bs ${precio.toStringAsFixed(2)}');
     } catch (error) {
       if (!mounted) return;
       _mensaje(
@@ -102,6 +105,32 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       );
     } finally {
       if (mounted) setState(() => _guardando.remove(variante.id));
+    }
+  }
+
+  Future<void> _guardarPrecioInicial(ProductoPrecioAdmin producto) async {
+    if (_guardando.contains(producto.id)) return;
+    final texto = _precios[producto.id]?.text.trim().replaceAll(',', '.') ?? '';
+    final precio = double.tryParse(texto);
+    if (precio == null || !precio.isFinite || precio <= 0 || precio > 100000) {
+      _mensaje('Escribe un precio válido mayor que 0.', error: true);
+      return;
+    }
+    setState(() => _guardando.add(producto.id));
+    try {
+      await ProductosAdminService.instance.crearOActualizarPrecioInicial(
+        productoId: producto.id,
+        precio: precio,
+      );
+      if (!mounted) return;
+      await _cargar();
+      if (!mounted) return;
+      _mensaje('Precio de 2 L guardado: Bs ' + precio.toStringAsFixed(2));
+    } catch (error) {
+      if (!mounted) return;
+      _mensaje(error.toString().replaceFirst('Exception: ', ''), error: true);
+    } finally {
+      if (mounted) setState(() => _guardando.remove(producto.id));
     }
   }
 
@@ -260,16 +289,25 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppTheme.naranja.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.restaurant_menu_rounded,
-                  color: AppTheme.naranja,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: AppTheme.crema,
+                  child: producto.imagenUrl == null ||
+                          producto.imagenUrl!.trim().isEmpty
+                      ? const Icon(Icons.restaurant_menu_rounded,
+                          color: AppTheme.naranja, size: 30)
+                      : Image.network(
+                          producto.imagenUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.restaurant_menu_rounded,
+                            color: AppTheme.naranja,
+                            size: 30,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -284,7 +322,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 ),
               ),
               Text(
-                '\${producto.variantes.length} precio(s)',
+                producto.variantes.length.toString() + ' precio(s)',
                 style: const TextStyle(
                   color: AppTheme.textoSecundario,
                   fontSize: 11,
@@ -294,12 +332,73 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           ),
           const SizedBox(height: 16),
           if (producto.variantes.isEmpty)
-            const Text(
-              'Este producto no tiene variantes registradas.',
-              style: TextStyle(color: AppTheme.textoSecundario),
-            )
+            _filaPrecioInicial(producto)
           else
             ...producto.variantes.map(_filaVariante),
+        ],
+      ),
+    );
+  }
+
+  Widget _filaPrecioInicial(ProductoPrecioAdmin producto) {
+    final controller = _precios[producto.id];
+    final guardando = _guardando.contains(producto.id);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Sin precio configurado · Presentación 2 L',
+            style: TextStyle(color: AppTheme.textoSecundario, fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compacto = constraints.maxWidth < 500;
+              final campo = TextField(
+                controller: controller,
+                enabled: !guardando,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  prefixText: 'Bs ',
+                  hintText: 'Precio de 2 L',
+                  isDense: true,
+                ),
+                onSubmitted: (_) => _guardarPrecioInicial(producto),
+              );
+              final boton = FilledButton.icon(
+                onPressed: guardando
+                    ? null
+                    : () => _guardarPrecioInicial(producto),
+                icon: guardando
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.add_circle_outline, size: 17),
+                label: Text(guardando ? 'Guardando...' : 'Crear precio'),
+              );
+              if (compacto) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [campo, const SizedBox(height: 8), boton],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: campo),
+                  const SizedBox(width: 10),
+                  boton,
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
