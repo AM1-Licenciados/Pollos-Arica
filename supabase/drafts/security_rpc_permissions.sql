@@ -11,10 +11,14 @@
 -- solo retira el permiso EXECUTE directo de los roles de la API.
 -- No elimina ni modifica el event trigger ensure_rls.
 --
--- Verificacion previa:
--- - ensure_rls existe y apunta a public.rls_auto_enable().
+-- Verificacion realizada en la base actual:
+-- - ensure_rls existe, esta habilitado y apunta a public.rls_auto_enable().
 -- - La funcion es SECURITY DEFINER, propiedad de postgres y usa
 --   search_path = pg_catalog.
+-- - Se ejecuto una prueba transaccional: se revocaron temporalmente los
+--   permisos, se creo una tabla de prueba en public y se verifico que
+--   el event trigger habilito RLS. La tabla y el REVOKE se revirtieron
+--   con ROLLBACK; no quedan cambios persistentes.
 --
 begin;
 
