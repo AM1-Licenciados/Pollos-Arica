@@ -295,7 +295,13 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   sliver: SliverToBoxAdapter(
-                    child: _construirFiltros(),
+                    child: _construirEncabezado(pedidos),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _construirFiltros(pedidos.length),
                   ),
                 ),
                 if (pedidos.isEmpty)
@@ -327,44 +333,189 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     );
   }
 
-  Widget _construirFiltros() {
-    return Row(
+  Widget _construirEncabezado(List<PedidoCliente> pedidos) {
+    final enCurso = pedidos.where(_estaEnCurso).length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF0E3D7)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE9D6),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: AppTheme.naranja,
+              size: 25,
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Todo en un solo lugar',
+                  style: TextStyle(
+                    color: AppTheme.marron,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  pedidos.isEmpty
+                      ? 'Tus próximos pedidos aparecerán aquí.'
+                      : '${enCurso} ${enCurso == 1 ? 'pedido en curso' : 'pedidos en curso'}',
+                  style: const TextStyle(
+                    color: AppTheme.textoSecundario,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (pedidos.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 7,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.crema,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '${pedidos.length}',
+                    style: const TextStyle(
+                      color: AppTheme.naranja,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'TOTAL',
+                    style: TextStyle(
+                      color: AppTheme.textoSecundario,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirFiltros(int cantidadTotal) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _construirOpcionFiltro('Todos'),
-        const SizedBox(width: 10),
-        _construirOpcionFiltro('En curso'),
+        const Padding(
+          padding: EdgeInsets.only(left: 2, bottom: 10),
+          child: Text(
+            'TUS PEDIDOS',
+            style: TextStyle(
+              color: AppTheme.textoSecundario,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            _construirOpcionFiltro('Todos', cantidadTotal),
+            const SizedBox(width: 9),
+            _construirOpcionFiltro('En curso', null),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _construirOpcionFiltro(String etiqueta) {
+  Widget _construirOpcionFiltro(String etiqueta, int? cantidad) {
     final seleccionado = _filtroSeleccionado == etiqueta;
 
-    return ChoiceChip(
-      label: Text(etiqueta),
-      selected: seleccionado,
-      showCheckmark: false,
-      onSelected: (_) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: () {
         setState(() {
           _filtroSeleccionado = etiqueta;
         });
       },
-      backgroundColor: Colors.white,
-      selectedColor: AppTheme.naranja,
-      side: BorderSide(
-        color: seleccionado
-            ? AppTheme.naranja
-            : const Color(0xFFE8D8C8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: seleccionado ? AppTheme.naranja : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: seleccionado
+                ? AppTheme.naranja
+                : const Color(0xFFE8D8C8),
+          ),
+          boxShadow: seleccionado
+              ? [
+                  BoxShadow(
+                    color: AppTheme.naranja.withValues(alpha: 0.16),
+                    blurRadius: 9,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              etiqueta,
+              style: TextStyle(
+                color: seleccionado ? Colors.white : AppTheme.marron,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            if (cantidad != null) ...[
+              const SizedBox(width: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: seleccionado
+                      ? Colors.white.withValues(alpha: 0.22)
+                      : AppTheme.crema,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$cantidad',
+                  style: TextStyle(
+                    color: seleccionado ? Colors.white : AppTheme.naranja,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-      ),
-      labelStyle: TextStyle(
-        color: seleccionado ? Colors.white : AppTheme.marron,
-        fontWeight: FontWeight.w600,
-        fontSize: 13,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
     );
   }
 
@@ -503,30 +654,67 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
   Widget _construirTarjeta(PedidoCliente pedido) {
     final colorEstado = _colorEstado(pedido.estado);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.white,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: const Color(0xFFF0E6DD)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.marron.withValues(alpha: 0.045),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        tilePadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 17),
         iconColor: AppTheme.naranja,
         collapsedIconColor: AppTheme.textoSecundario,
+        shape: const Border(),
+        collapsedShape: const Border(),
         title: Row(
           children: [
+            Container(
+              width: 39,
+              height: 39,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE9D6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.receipt_rounded,
+                color: AppTheme.naranja,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 11),
             Expanded(
-              child: Text(
-                pedido.codigo,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppTheme.marron,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'PEDIDO',
+                    style: TextStyle(
+                      color: AppTheme.textoSecundario,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    pedido.codigo,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppTheme.marron,
+                    ),
+                  ),
+                ],
               ),
             ),
             _construirEtiquetaEstado(
@@ -536,35 +724,63 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           ],
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.only(left: 50, top: 7, right: 4),
+          child: Row(
             children: [
-              Text(
-                _formatearFecha(pedido.createdAt),
-                style: const TextStyle(
-                  color: AppTheme.textoSecundario,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 7),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${pedido.cantidadProductos} productos',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 12,
+                          color: AppTheme.textoSecundario,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            _formatearFecha(pedido.createdAt),
+                            style: const TextStyle(
+                              color: AppTheme.textoSecundario,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${pedido.cantidadProductos} ${pedido.cantidadProductos == 1 ? 'producto' : 'productos'}',
                       style: const TextStyle(
                         color: AppTheme.textoSecundario,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'TOTAL',
+                    style: TextStyle(
+                      color: AppTheme.textoSecundario,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.6,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     'Bs ${pedido.total.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: AppTheme.naranja,
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -573,7 +789,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           ),
         ),
         children: [
-          const Divider(height: 18),
+          const Divider(height: 18, color: Color(0xFFF1E7DF)),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
