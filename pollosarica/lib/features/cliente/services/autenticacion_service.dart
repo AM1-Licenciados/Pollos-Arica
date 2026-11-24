@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AutenticacionService {
+class CorreoYaRegistradoException implements Exception {\n  const CorreoYaRegistradoException();\n}\n\nclass AutenticacionService {
   AutenticacionService._();
 
   static final AutenticacionService instance = AutenticacionService._();
@@ -30,7 +30,7 @@ class AutenticacionService {
       },
     );
 
-    return respuesta.session != null;
+    // Supabase oculta intencionalmente si un correo ya existe.\n    // En ese caso devuelve un usuario ofuscado con identities vacío.\n    if (respuesta.user != null &&\n        (respuesta.user!.identities?.isEmpty ?? false)) {\n      throw const CorreoYaRegistradoException();\n    }\n\n    return respuesta.session != null;
   }
 
   Future<void> iniciarSesion({
