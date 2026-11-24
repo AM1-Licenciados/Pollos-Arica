@@ -22,6 +22,33 @@ class QrPagoAdminService {
     return registro?['qr_imagen_url']?.toString();
   }
 
+  (String, String) _detectarFormato(Uint8List bytes) {
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return ('png', 'image/png');
+    }
+
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return ('jpg', 'image/jpeg');
+    }
+
+    if (bytes.length >= 12 &&
+        String.fromCharCodes(bytes.sublist(0, 4)) == 'RIFF' &&
+        String.fromCharCodes(bytes.sublist(8, 12)) == 'WEBP') {
+      return ('webp', 'image/webp');
+    }
+
+    throw Exception(
+      'El formato de imagen no es compatible. Usa una imagen PNG, JPG o WEBP.',
+    );
+  }
+
   Future<String> actualizarQr(Uint8List bytes) async {
     if (bytes.isEmpty || bytes.length > _maxBytes) {
       throw Exception('La imagen del QR debe pesar como máximo 5 MB.');
@@ -41,15 +68,16 @@ class QrPagoAdminService {
 
     // Usamos un nombre nuevo por actualización para evitar caché y conservar
     // la imagen anterior si hay clientes con una pantalla de pago abierta.
+    final (extension, contentType) = _detectarFormato(bytes);
     final marcaTiempo = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final ruta = 'qr-negocio/qr_$marcaTiempo.png';
+    final ruta = 'qr-negocio/qr_$marcaTiempo.$extension';
     final storage = _supabase.storage.from(_bucket);
 
     await storage.uploadBinary(
       ruta,
       bytes,
       fileOptions: const FileOptions(
-        contentType: 'image/png',
+        contentType: contentType,
         cacheControl: '3600',
         upsert: false,
       ),
