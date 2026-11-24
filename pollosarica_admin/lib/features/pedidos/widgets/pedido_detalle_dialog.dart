@@ -133,7 +133,29 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
       return 'Verifica el movimiento en la banca del negocio antes de confirmar.';
     }
 
+    if (widget.pedido.metodoPago == 'qr' && _estadoPago == 'rechazado') {
+      return 'El pago fue rechazado. No avances con la preparación del pedido.';
+    }
+
     return null;
+  }
+
+  List<String> get _estadosPedidoDisponibles {
+    if (widget.pedido.metodoPago != 'qr' || _estadoPago == 'pagado') {
+      return PedidoEstados.pedido;
+    }
+
+    final permitidos = _estadoPago == 'rechazado'
+        ? <String>['rechazado', 'cancelado']
+        : <String>['pendiente', 'aceptado', 'rechazado', 'cancelado'];
+
+    // Mantener visible el estado actual si es un pedido histórico
+    // que ya estaba en una etapa operativa antes de aplicar la regla QR.
+    if (!permitidos.contains(_estado)) {
+      return [_estado, ...permitidos];
+    }
+
+    return permitidos;
   }
 
   @override
@@ -335,7 +357,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       decoration: const InputDecoration(
                         labelText: 'Actualizar estado',
                       ),
-                      items: PedidoEstados.pedido.map((estado) {
+                      items: _estadosPedidoDisponibles.map((estado) {
                         return DropdownMenuItem(
                           value: estado,
                           child: Text(PedidoEstados.etiqueta(estado)),
