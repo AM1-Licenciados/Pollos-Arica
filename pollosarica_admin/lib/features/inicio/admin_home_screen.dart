@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../pedidos/screens/pedidos_screen.dart';
 import '../configuracion/screens/configuracion_negocio_screen.dart';
+import '../configuracion/screens/qr_pago_admin_screen.dart';
+import '../productos/screens/productos_admin_screen.dart';
 import '../../core/theme/app_theme.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -21,6 +23,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   static const List<_OpcionMenu> _opciones = [
     _OpcionMenu('Inicio', Icons.grid_view_rounded),
     _OpcionMenu('Pedidos', Icons.receipt_long_rounded),
+    _OpcionMenu('Productos', Icons.restaurant_menu_rounded),
+    _OpcionMenu('QR de pago', Icons.qr_code_2_rounded),
     _OpcionMenu('Configuración', Icons.tune_rounded),
   ];
 
@@ -336,6 +340,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 1:
         return const PedidosScreen();
       case 2:
+        return const ProductosAdminScreen();
+      case 3:
+        return const QrPagoAdminScreen();
+      case 4:
         return const ConfiguracionNegocioScreen();
       default:
         return _construirDashboard();
@@ -411,11 +419,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         onTap: () => _seleccionarOpcion(1),
                       ),
                       _TarjetaAcceso(
+                        icono: Icons.restaurant_menu_rounded,
+                        titulo: 'Productos y precios',
+                        descripcion: 'Actualiza los precios del catálogo.',
+                        color: const Color(0xFF6D79A8),
+                        onTap: () => _seleccionarOpcion(2),
+                      ),
+                      _TarjetaAcceso(
+                        icono: Icons.qr_code_2_rounded,
+                        titulo: 'Actualizar QR de pago',
+                        descripcion: 'Reemplaza y recorta el QR bancario.',
+                        color: const Color(0xFF32866C),
+                        onTap: () => _seleccionarOpcion(3),
+                      ),
+                      _TarjetaAcceso(
                         icono: Icons.storefront_rounded,
                         titulo: 'Datos del negocio',
                         descripcion: 'Actualiza la información y configuración.',
                         color: const Color(0xFF6D79A8),
-                        onTap: () => _seleccionarOpcion(2),
+                        onTap: () => _seleccionarOpcion(4),
                       ),
                     ],
                   );
