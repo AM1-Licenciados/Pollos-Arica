@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pollos Arica necesita guardar el código QR de pago en tu galería.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Pollos Arica necesita usar el micrófono para buscar productos mediante la voz.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
