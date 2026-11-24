@@ -42,6 +42,17 @@ class PedidoService {
 
   static const String _bucketComprobantes = 'comprobantes-pago';
 
+  Future<bool> tieneComprobanteQr(String pedidoId) async {
+    final usuario = _supabase.auth.currentUser;
+    if (usuario == null) return false;
+
+    final archivos = await _supabase.storage
+        .from(_bucketComprobantes)
+        .list(path: '${usuario.id}/$pedidoId');
+
+    return archivos.any((archivo) => archivo.name == 'comprobante');
+  }
+
   Future<void> subirComprobanteQr({
     required String pedidoId,
     required XFile archivo,
@@ -107,6 +118,11 @@ class PedidoService {
 
     if (usuario == null) {
       throw Exception('Debes iniciar sesión para notificar el pago.');
+    }
+
+    final comprobanteSubido = await tieneComprobanteQr(pedidoId);
+    if (!comprobanteSubido) {
+      throw Exception('Primero debes adjuntar el comprobante de pago.');
     }
 
     final respuesta = await _supabase
