@@ -60,6 +60,7 @@ class _QrPagoAdminScreenState extends State<QrPagoAdminScreen> {
       if (archivo == null || !mounted) return;
 
       final bytesOriginales = await archivo.readAsBytes();
+      if (!mounted) return;
       if (bytesOriginales.isEmpty ||
           bytesOriginales.length > 10 * 1024 * 1024) {
         throw Exception('Selecciona una imagen de hasta 10 MB para recortarla.');
@@ -240,7 +241,7 @@ class _QrPagoAdminScreenState extends State<QrPagoAdminScreen> {
                     ),
                     const SizedBox(height: 18),
                     Container(
-                      width: MediaQuery.sizeOf(context).width < 360 ? 220 : 300,
+                      width: MediaQuery.sizeOf(context).width < 400 ? 180 : 300,
                       constraints: const BoxConstraints(maxWidth: 300),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
