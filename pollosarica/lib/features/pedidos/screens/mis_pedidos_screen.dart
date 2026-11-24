@@ -293,12 +293,6 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  sliver: SliverToBoxAdapter(
-                    child: _construirEncabezado(pedidos),
-                  ),
-                ),
-                SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _construirFiltros(pedidos.length),
@@ -329,94 +323,6 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _construirEncabezado(List<PedidoCliente> pedidos) {
-    final enCurso = pedidos.where(_estaEnCurso).length;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF0E3D7)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE9D6),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.receipt_long_rounded,
-              color: AppTheme.naranja,
-              size: 25,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Todo en un solo lugar',
-                  style: TextStyle(
-                    color: AppTheme.marron,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  pedidos.isEmpty
-                      ? 'Tus próximos pedidos aparecerán aquí.'
-                      : '$enCurso ${enCurso == 1 ? 'pedido en curso' : 'pedidos en curso'}',
-                  style: const TextStyle(
-                    color: AppTheme.textoSecundario,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (pedidos.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 11,
-                vertical: 7,
-              ),
-              decoration: BoxDecoration(
-                color: AppTheme.crema,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '${pedidos.length}',
-                    style: const TextStyle(
-                      color: AppTheme.naranja,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    'TOTAL',
-                    style: TextStyle(
-                      color: AppTheme.textoSecundario,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
       ),
     );
   }
