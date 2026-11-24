@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../carrito/data/pedido_service.dart';
@@ -16,6 +17,64 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
   late Future<List<PedidoCliente>> _pedidosFuture;
   String _filtroSeleccionado = 'Todos';
   final Set<String> _pedidosNotificandoPago = {};
+  final Set<String> _pedidosSubiendoComprobante = {};
+  final Map<String, Future<bool>> _comprobantesFuture = {};
+
+  Future<bool> _comprobanteExiste(PedidoCliente pedido) {
+    return _comprobantesFuture.putIfAbsent(
+      pedido.id,
+      () => PedidoService.instance.tieneComprobanteQr(pedido.id),
+    );
+  }
+
+  Future<void> _subirComprobanteDesdeHistorial(PedidoCliente pedido) async {
+    if (_pedidosSubiendoComprobante.contains(pedido.id)) return;
+
+    try {
+      final archivo = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (archivo == null || !mounted) return;
+
+      setState(() => _pedidosSubiendoComprobante.add(pedido.id));
+
+      await PedidoService.instance.subirComprobanteQr(
+        pedidoId: pedido.id,
+        archivo: archivo,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _comprobantesFuture[pedido.id] = Future<bool>.value(true);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Comprobante adjuntado correctamente.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _pedidosSubiendoComprobante.remove(pedido.id));
+      }
+    }
+  }
+
+  void _reintentarComprobante(PedidoCliente pedido) {
+    setState(() {
+      _comprobantesFuture.remove(pedido.id);
+    });
+  }
 
   @override
   void initState() {
@@ -548,30 +607,163 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                 PedidoEstadosCliente.rechazado,
                 PedidoEstadosCliente.cancelado,
               }.contains(pedido.estado)) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _pedidosNotificandoPago.contains(pedido.id)
-                    ? null
-                    : () => _notificarPagoDesdeHistorial(pedido),
-                icon: _pedidosNotificandoPago.contains(pedido.id)
-                    ? const SizedBox(
-                        width: 17,
-                        height: 17,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.account_balance_wallet_outlined),
-                label: const Text('Ya realicé el pago'),
-              ),
-            ),
-            const Text(
-              'Después de transferir, avisa al personal para que verifique el movimiento.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.textoSecundario,
-                fontSize: 11,
-              ),
+            const SizedBox(height: 14),
+            FutureBuilder<bool>(
+              future: _comprobanteExiste(pedido),
+              builder: (context, comprobanteSnapshot) {
+                if (comprobanteSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.naranja,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                if (comprobanteSnapshot.hasError) {
+                  return Column(
+                    children: [
+                      const Text(
+                        'No pudimos comprobar si adjuntaste el comprobante.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppTheme.textoSecundario,
+                          fontSize: 12,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _reintentarComprobante(pedido),
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('Reintentar'),
+                      ),
+                    ],
+                  );
+                }
+
+                final comprobanteSubido =
+                    comprobanteSnapshot.data == true;
+                final subiendo =
+                    _pedidosSubiendoComprobante.contains(pedido.id);
+                final notificando =
+                    _pedidosNotificandoPago.contains(pedido.id);
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.crema.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFE8D8C8),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            comprobanteSubido
+                                ? Icons.check_circle_rounded
+                                : Icons.receipt_long_outlined,
+                            color: comprobanteSubido
+                                ? const Color(0xFF2E9D63)
+                                : AppTheme.naranja,
+                            size: 21,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              comprobanteSubido
+                                  ? 'Comprobante adjuntado'
+                                  : 'Completa tu pago',
+                              style: const TextStyle(
+                                color: AppTheme.marron,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        comprobanteSubido
+                            ? 'Ahora puedes avisar al personal que realizaste la transferencia.'
+                            : 'Primero adjunta una imagen de tu comprobante para continuar.',
+                        style: const TextStyle(
+                          color: AppTheme.textoSecundario,
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 11),
+                      OutlinedButton.icon(
+                        onPressed: subiendo || notificando
+                            ? null
+                            : () => _subirComprobanteDesdeHistorial(pedido),
+                        icon: subiendo
+                            ? const SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                comprobanteSubido
+                                    ? Icons.edit_outlined
+                                    : Icons.upload_file_rounded,
+                              ),
+                        label: Text(
+                          subiendo
+                              ? 'Subiendo comprobante...'
+                              : comprobanteSubido
+                                  ? 'Cambiar comprobante'
+                                  : 'Subir comprobante',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.naranja,
+                          side: const BorderSide(color: AppTheme.naranja),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 46,
+                        child: ElevatedButton.icon(
+                          onPressed: !comprobanteSubido ||
+                                  subiendo ||
+                                  notificando
+                              ? null
+                              : () => _notificarPagoDesdeHistorial(pedido),
+                          icon: notificando
+                              ? const SizedBox(
+                                  width: 17,
+                                  height: 17,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                ),
+                          label: const Text('Ya realicé el pago'),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
           if (pedido.metodoPago == 'qr' &&
