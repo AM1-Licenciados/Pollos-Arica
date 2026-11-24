@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
+import 'package:crop_your_image/crop_your_image.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -66,31 +66,8 @@ class _QrPagoAdminScreenState extends State<QrPagoAdminScreen> {
         throw Exception('Selecciona una imagen de hasta 10 MB para recortarla.');
       }
 
-      final recortado = await ImageCropper().cropImage(
-        sourcePath: archivo.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        maxWidth: 1200,
-        maxHeight: 1200,
-        compressFormat: ImageCompressFormat.png,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Recortar código QR',
-            toolbarColor: AppTheme.naranja,
-            toolbarWidgetColor: Colors.white,
-            lockAspectRatio: true,
-            aspectRatioPresets: const [CropAspectRatioPreset.square],
-          ),
-          IOSUiSettings(
-            title: 'Recortar código QR',
-            aspectRatioPresets: const [CropAspectRatioPreset.square],
-          ),
-          WebUiSettings(context: context),
-        ],
-      );
-
-      if (recortado == null || !mounted) return;
-
-      final bytes = await recortado.readAsBytes();
+      final bytes = await _abrirEditorRecorte(bytesOriginales);
+      if (bytes == null || !mounted) return;
       if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
         throw Exception(
           'La imagen recortada debe pesar como máximo 5 MB. '
@@ -109,6 +86,58 @@ class _QrPagoAdminScreenState extends State<QrPagoAdminScreen> {
     } finally {
       if (mounted) setState(() => _seleccionando = false);
     }
+  }
+
+  Future<Uint8List?> _abrirEditorRecorte(Uint8List imagen) {
+    final controller = CropController();
+
+    return showDialog<Uint8List>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Recortar código QR'),
+          content: SizedBox(
+            width: 520,
+            height: 420,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Crop(
+                image: imagen,
+                controller: controller,
+                aspectRatio: 1,
+                interactive: true,
+                baseColor: AppTheme.marron,
+                maskColor: Colors.black.withValues(alpha: 0.55),
+                onCropped: (resultado) {
+                  switch (resultado) {
+                    case CropSuccess(:final croppedImage):
+                      Navigator.of(dialogContext).pop(croppedImage);
+                    case CropFailure(:final cause):
+                      Navigator.of(dialogContext).pop();
+                      _mensaje(
+                        'No se pudo recortar la imagen: $cause',
+                        error: true,
+                      );
+                  }
+                },
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: controller.crop,
+              icon: const Icon(Icons.crop),
+              label: const Text('Usar este recorte'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _guardar() async {
