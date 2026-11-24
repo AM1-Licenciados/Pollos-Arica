@@ -1,66 +1,89 @@
 # Pollos Arica
 
-**Sistema de consulta de menú y gestión de pedidos para un negocio gastronómico.**
+**Aplicación móvil para consultar el menú y realizar pedidos de un negocio gastronómico local.**
 
-Pollos Arica es un proyecto académico desarrollado con Flutter y Supabase. Su objetivo es facilitar a los clientes la consulta del menú y la realización de pedidos, y ofrecer al administrador una interfaz web para revisar y gestionar las solicitudes.
+Pollos Arica es un proyecto académico desarrollado con Flutter y Supabase. Su objetivo es facilitar la consulta del menú, la gestión del carrito y la realización y seguimiento de pedidos.
 
-> **Estado del repositorio:** esta primera publicación contiene documentación del proyecto. El código fuente de las aplicaciones todavía no está incorporado. La versión de trabajo más reciente permanece en el equipo de desarrollo y deberá añadirse cuando esté disponible.
+> **Estado:** la rama `feature/busqueda-por-voz` contiene el código de la aplicación del cliente en `pollosarica/`. El estado de los componentes administrativos y de los scripts SQL debe verificarse por separado antes de considerarlos parte de esta entrega.
 
-## Componentes del sistema
+## Funcionalidades presentes en la aplicación del cliente
 
-| Componente | Tecnología | Propósito |
-|---|---|---|
-| Aplicación del cliente | Flutter / Dart | Catálogo, carrito, confirmación y consulta de pedidos |
-| Panel administrativo | Flutter Web / Dart | Acceso del administrador y gestión de pedidos |
-| Backend compartido | Supabase | Servicios y conexión de ambas aplicaciones |
-| Base de datos | PostgreSQL | Productos, categorías, clientes y pedidos |
-| Almacenamiento | Supabase Storage | Imágenes de productos |
-| Autenticación | Supabase Auth | Inicio de sesión administrativo |
-
-## Funcionalidades desarrolladas hasta el avance documentado
-
-- Catálogo de productos organizado por categorías, variantes y precios.
+- Catálogo conectado a Supabase, con categorías, productos, variantes y precios.
+- Búsqueda escrita y búsqueda por voz en el catálogo.
 - Carrito de compras y confirmación de pedidos.
-- Registro de datos básicos del cliente en el dispositivo.
-- Creación de pedidos mediante una función RPC que valida productos, cantidades y precios en el servidor.
-- Código y token de seguimiento para consultar pedidos.
-- Sección **Mis pedidos**, con historial disponible en el mismo dispositivo o navegador donde se guardaron las credenciales.
-- Panel administrativo web con autenticación y módulo de consulta y actualización de pedidos.
-- Separación entre estado del pedido y estado del pago.
-- Políticas de seguridad mediante Row Level Security (RLS).
+- Registro e inicio de sesión mediante Supabase Auth.
+- Perfil del cliente, edición de datos y fotografía de perfil mediante Supabase Storage.
+- Creación de pedidos mediante la función RPC `crear_pedido_con_seguimiento`.
+- Consulta de pedidos mediante la función RPC `obtener_mis_pedidos`.
+- Estados del pedido y del pago presentados por separado.
+- Navegación entre Inicio, Mis pedidos y Perfil.
 
-## Arquitectura
+La consulta del historial utiliza credenciales de seguimiento almacenadas localmente en el dispositivo o navegador. Si se pierde ese almacenamiento, no debe asumirse que el historial se recuperará automáticamente en otro dispositivo.
 
-Las dos aplicaciones son proyectos Flutter independientes y utilizan el mismo proyecto Supabase. Consulta [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
+## Tecnologías
 
-## Base de datos
+| Componente | Tecnología |
+|---|---|
+| Aplicación del cliente | Flutter y Dart |
+| Backend | Supabase |
+| Base de datos | PostgreSQL |
+| Autenticación | Supabase Auth |
+| Archivos e imágenes | Supabase Storage |
+| Seguridad de datos | Row Level Security (RLS) |
 
-La estructura relacional y las responsabilidades de las tablas se describen en [docs/BASE_DE_DATOS.md](docs/BASE_DE_DATOS.md).
+## Estructura documentada
+
+```text
+Pollos-Arica/
+├── pollosarica/       Aplicación Flutter del cliente
+├── docs/              Documentación técnica y evidencias
+└── README.md
+```
+
+La presencia y el estado de otros proyectos o scripts deben confirmarse en la rama antes de utilizarlos como evidencia de entrega.
 
 ## Documentación
 
 - [Arquitectura del sistema](docs/ARQUITECTURA.md)
-- [Modelo de datos](docs/BASE_DE_DATOS.md)
-- [Estado y próximos pasos](docs/ESTADO_PROYECTO.md)
+- [Modelo de base de datos](docs/BASE_DE_DATOS.md)
+- [Estado del proyecto y próximos pasos](docs/ESTADO_PROYECTO.md)
 - [Configuración y seguridad](docs/CONFIGURACION_Y_SEGURIDAD.md)
+- [Evidencias de la actividad 4](docs/ACTIVIDAD_4_EVIDENCIAS_POLLOS_ARICA.md)
 
-## Tecnologías
+## Configuración local
 
-- Flutter y Dart
-- Supabase
-- PostgreSQL
-- Supabase Auth
-- Supabase Storage
-- Row Level Security (RLS)
+Desde el directorio `pollosarica/`:
 
-## Ejecución
+```bash
+flutter pub get
+flutter run
+```
 
-Cuando el código fuente sea incorporado, cada aplicación tendrá sus propias instrucciones de instalación y ejecución. Las credenciales de Supabase deberán configurarse mediante variables de compilación o un mecanismo local seguro.
+La aplicación requiere las variables de compilación `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`. No se deben incluir claves secretas, contraseñas, tokens privados ni archivos de firma en el repositorio.
 
-## Estado del desarrollo
+Ejemplo de ejecución web:
 
-El proyecto continúa en desarrollo. Las funciones futuras y las limitaciones conocidas están descritas en [docs/ESTADO_PROYECTO.md](docs/ESTADO_PROYECTO.md).
+```bash
+flutter run -d chrome --dart-define=SUPABASE_URL=TU_URL --dart-define=SUPABASE_PUBLISHABLE_KEY=TU_CLAVE_PUBLICA
+```
+
+## Validación
+
+Antes de integrar cambios a `main`, ejecutar desde `pollosarica/`:
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+```
+
+La aprobación de estas comprobaciones locales no sustituye las pruebas funcionales con Supabase ni las pruebas en dispositivos físicos.
+
+## Estado y alcance
+
+El proyecto continúa en desarrollo. Las integraciones externas, el cobro por QR, la generación de la APK de lanzamiento y las pruebas con usuarios deben registrarse como completadas únicamente cuando existan evidencias verificables.
 
 ---
+
 **Proyecto académico — Pollos Arica**  
 **Organización:** AM1-Licenciados
