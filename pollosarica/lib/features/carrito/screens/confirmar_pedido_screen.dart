@@ -441,7 +441,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                   _tituloSeccion('Método de pago'),
 
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _opcionPago(
