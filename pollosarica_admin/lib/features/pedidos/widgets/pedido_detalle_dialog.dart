@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../models/pedido.dart';
@@ -27,12 +28,94 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
 
   bool _guardandoEstado = false;
   bool _guardandoPago = false;
+  late Future<String?> _urlComprobante;
 
   @override
   void initState() {
     super.initState();
     _estado = widget.pedido.estado;
     _estadoPago = widget.pedido.estadoPago;
+    _urlComprobante = _obtenerUrlComprobante();
+  }
+
+
+  Future<String?> _obtenerUrlComprobante() async {
+    final pedido = widget.pedido;
+    if (pedido.metodoPago != 'qr' || pedido.authUserId.isEmpty) return null;
+    final ruta = '${pedido.authUserId}/${pedido.id}/comprobante';
+    try {
+      return await Supabase.instance.client.storage
+          .from('comprobantes-pago')
+          .createSignedUrl(ruta, 300);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _comprobanteQr() {
+    return FutureBuilder<String?>(
+      future: _urlComprobante,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final url = snapshot.data;
+        if (url == null || url.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF5E9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'El cliente todavía no adjuntó un comprobante.',
+              style: TextStyle(color: AppTheme.textoSecundario, fontSize: 12),
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+            const Text('Comprobante de pago',
+                style: TextStyle(color: AppTheme.marron,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (context) => Dialog(
+                  child: InteractiveViewer(
+                    child: Image.network(url, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  url,
+                  height: 190,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No se pudo cargar la imagen del comprobante.'),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text('Toca la imagen para ampliarla.',
+                style: TextStyle(color: AppTheme.textoSecundario, fontSize: 11)),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _guardarEstado(String? valor) async {
@@ -333,6 +416,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       'Método',
                       pedido.metodoPago.toUpperCase(),
                     ),
+                    if (pedido.metodoPago == 'qr') _comprobanteQr(),
                     DropdownButtonFormField<String>(
                       initialValue: PedidoEstados.pago.contains(_estadoPago)
                           ? _estadoPago
