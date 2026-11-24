@@ -247,6 +247,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       backgroundColor: AppTheme.crema,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        toolbarHeight: 48,
         backgroundColor: AppTheme.crema,
         elevation: 0,
         title: const Text(
@@ -293,7 +294,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _construirFiltros(pedidos.length),
                   ),
