@@ -125,6 +125,10 @@ begin
   v_uid := (select auth.uid());
   v_es_admin := coalesce((select public.es_admin_activo()), false);
 
+  -- La marca de tiempo se genera en el servidor y no depende del reloj
+  -- del dispositivo que realiza la solicitud.
+  new.updated_at := pg_catalog.now();
+
   -- El metodo de pago no se puede cambiar despues de crear el pedido.
   if new.metodo_pago is distinct from old.metodo_pago then
     raise exception 'No se permite cambiar el metodo de pago de un pedido.';
