@@ -275,3 +275,18 @@ commit;
 -- - Probar que los triggers privados pueden ejecutarse con los permisos
 --   efectivos del rol propietario en el proyecto objetivo.
 -- - Ejecutar Supabase Security Advisor despues de aplicar en entorno de prueba.
+
+-- RESULTADO DE PRUEBA TRANSACCIONAL AISLADA (2026-11-24):
+-- Se simularon roles authenticated de cliente propietario y administrador
+-- activo, con politicas SELECT/UPDATE equivalentes a las existentes.
+-- Resultados: cliente propio pendiente -> por_verificar (1 fila);
+-- cliente no puede marcar pagado (0 filas); cliente no puede cambiar
+-- estado operativo (0 filas); cliente ajeno no puede notificar (0 filas);
+-- admin no puede avanzar QR sin pago (trigger bloquea); admin puede
+-- confirmar y rechazar QR; tras confirmar, puede avanzar a preparacion;
+-- efectivo pendiente -> pagado sigue permitido. Se generaron los tres
+-- eventos de auditoria con el actor correcto.
+-- Todas las pruebas se ejecutaron dentro de BEGIN/ROLLBACK. Se verifico
+-- que no quedaron tablas ni esquema de prueba persistentes.
+-- Esta prueba valida la logica en tablas aisladas, no sustituye una prueba
+-- final de migracion ni una validacion desde las aplicaciones Flutter.
