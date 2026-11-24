@@ -89,6 +89,26 @@ class PedidoAdminService {
       throw Exception('Estado de pedido no válido.');
     }
 
+    // Validación de experiencia de usuario. El trigger de PostgreSQL
+    // es la protección definitiva y evita avances aunque exista una
+    // actualización concurrente o se omita esta validación desde Flutter.
+    final pedidoActual = await _supabase
+        .from('pedidos')
+        .select('metodo_pago, estado_pago')
+        .eq('id', pedidoId)
+        .single();
+
+    final metodoPago = pedidoActual['metodo_pago']?.toString();
+    final estadoPago = pedidoActual['estado_pago']?.toString();
+
+    if (metodoPago == 'qr' &&
+        estadoPago != 'pagado' &&
+        const ['en_preparacion', 'listo', 'entregado'].contains(nuevoEstado)) {
+      throw Exception(
+        'No puedes avanzar este pedido: primero debes confirmar el pago QR.',
+      );
+    }
+
     await _supabase
         .from('pedidos')
         .update({
@@ -111,7 +131,7 @@ class PedidoAdminService {
     // y el trigger de protección del pedido.
     final pedidoActual = await _supabase
         .from('pedidos')
-        .select('metodo_pago, estado_pago')
+        .select('metodo_pago, estado_pago, estado')
         .eq('id', pedidoId)
         .single();
 
