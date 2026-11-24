@@ -94,7 +94,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'No se pudieron recuperar tus datos. Puedes ingresarlos manualmente.',
+            'No se pudieron recuperar tus datos. Vuelve a intentarlo o revisa tu perfil.',
           ),
         ),
       );
@@ -157,6 +157,16 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
       final nombre = _nombreController.text.trim();
       final celular = _celularController.text.trim();
 
+      if (nombre.isEmpty || celular.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Completa tu nombre y celular desde tu perfil antes de confirmar.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
       final pedido = await PedidoService.instance.crearPedido(
         nombre: nombre,
         celular: celular,
@@ -164,13 +174,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
         tipoEntrega: _tipoEntrega,
         momentoPreparacion: _momentoPreparacion,
         observaciones: _observacionesController.text,
-      );
-
-      // Actualizamos los datos locales después de registrar
-      // correctamente el pedido.
-      await ClienteLocalService.instance.guardarCliente(
-        nombre: nombre,
-        telefono: celular,
       );
 
       if (!mounted) return;
@@ -351,31 +354,20 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                       ),
                     )
                   else ...[
-                    _campo(
-                      _nombreController,
+                    _datoCliente(
                       'Nombre completo',
+                      _nombreController.text,
                       Icons.person_outline,
-                      validator: (v) =>
-                          (v == null || v.trim().length < 2)
-                              ? 'Ingresa tu nombre.'
-                              : null,
                     ),
-                    const SizedBox(height: 12),
-                    _campo(
-                      _celularController,
+                    const SizedBox(height: 10),
+                    _datoCliente(
                       'Número de celular',
+                      _celularController.text,
                       Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      validator: (v) =>
-                          (v == null ||
-                                  !RegExp(r'^[0-9+() -]{7,30}$')
-                                      .hasMatch(v.trim()))
-                              ? 'Ingresa un celular válido.'
-                              : null,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Puedes modificar tus datos si es necesario.',
+                      'Estos datos se obtienen de tu perfil. Para modificarlos, ingresa a la sección Perfil.',
                       style: TextStyle(
                         color: AppTheme.textoSecundario,
                         fontSize: 12,
@@ -448,24 +440,29 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
 
                   _tituloSeccion('Método de pago'),
 
-                  _opcionPago(
-                    'efectivo',
-                    _tipoEntrega == 'retiro'
-                        ? 'Efectivo al recoger'
-                        : 'Efectivo en el local',
-                    _tipoEntrega == 'retiro'
-                        ? 'Paga cuando retires tu pedido.'
-                        : 'Paga en el establecimiento al recibir tu pedido.',
-                    Icons.payments_outlined,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _opcionPago(
-                    'qr',
-                    'Pago mediante QR',
-                    'Escanea el QR y transfiere el importe exacto.',
-                    Icons.qr_code_2_rounded,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _opcionPago(
+                          'efectivo',
+                          'Efectivo',
+                          _tipoEntrega == 'retiro'
+                              ? 'Al recoger'
+                              : 'En el local',
+                          Icons.payments_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _opcionPago(
+                          'qr',
+                          'Pago QR',
+                          'Transferencia',
+                          Icons.qr_code_2_rounded,
+                        ),
+                      ),
+                    ],
                   ),
 
                   if (_metodoPago == 'qr') ...[
@@ -1022,60 +1019,117 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
     String titulo,
     String descripcion,
     IconData icono,
-  ) =>
-      InkWell(
-        onTap: _enviando
-            ? null
-            : () => setState(() => _metodoPago = valor),
+  ) {
+    final seleccionado = _metodoPago == valor;
+    final esEfectivo = valor == 'efectivo';
+    final color = esEfectivo
+        ? const Color(0xFF39845A)
+        : const Color(0xFF34383D);
+    final fondo = esEfectivo
+        ? const Color(0xFFE8F3EC)
+        : const Color(0xFFE9EAEC);
+
+    return InkWell(
+      onTap: _enviando
+          ? null
+          : () => setState(() => _metodoPago = valor),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+        decoration: BoxDecoration(
+          color: fondo,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: seleccionado ? color : Colors.transparent,
+            width: seleccionado ? 2 : 1,
+          ),
+          boxShadow: seleccionado
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.12),
+                    blurRadius: 9,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icono, color: color, size: 29),
+            const SizedBox(height: 9),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              descripcion,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color.withValues(alpha: 0.82),
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Icon(
+              seleccionado
+                  ? Icons.check_circle_rounded
+                  : Icons.circle_outlined,
+              color: color,
+              size: 19,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _datoCliente(String etiqueta, String valor, IconData icono) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _metodoPago == valor
-                  ? AppTheme.naranja
-                  : Colors.transparent,
-              width: 1.5,
+      ),
+      child: Row(
+        children: [
+          Icon(icono, color: AppTheme.naranja, size: 21),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  etiqueta,
+                  style: const TextStyle(
+                    color: AppTheme.textoSecundario,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  valor.isEmpty ? 'No registrado' : valor,
+                  style: const TextStyle(
+                    color: AppTheme.marron,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Icon(icono, color: AppTheme.naranja, size: 25),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titulo,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.marron,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      descripcion,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textoSecundario,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                _metodoPago == valor
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: AppTheme.naranja,
-              ),
-            ],
-          ),
-        ),
-      );
+          const Icon(Icons.lock_outline, color: AppTheme.textoSecundario, size: 17),
+        ],
+      ),
+    );
+  }
 
   Widget _tituloSeccion(String texto) => Padding(
         padding: const EdgeInsets.only(bottom: 11),
