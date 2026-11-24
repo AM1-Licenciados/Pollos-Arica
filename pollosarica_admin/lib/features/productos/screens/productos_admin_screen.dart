@@ -125,7 +125,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       if (!mounted) return;
       await _cargar();
       if (!mounted) return;
-      _mensaje('Precio de 2 L guardado: Bs ${precio.toStringAsFixed(2)}');
+      _mensaje('Precio inicial guardado: Bs ${precio.toStringAsFixed(2)}');
     } catch (error) {
       if (!mounted) return;
       _mensaje(error.toString().replaceFirst('Exception: ', ''), error: true);
@@ -351,7 +351,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Sin precio configurado · Presentación 2 L',
+            'Sin precio configurado · Precio por unidad',
             style: TextStyle(color: AppTheme.textoSecundario, fontSize: 13),
           ),
           const SizedBox(height: 10),
@@ -365,7 +365,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   prefixText: 'Bs ',
-                  hintText: 'Precio de 2 L',
+                  hintText: 'Precio por unidad',
                   isDense: true,
                 ),
                 onSubmitted: (_) => _guardarPrecioInicial(producto),
