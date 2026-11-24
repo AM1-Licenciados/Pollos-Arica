@@ -314,16 +314,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compacto = constraints.maxWidth < 500;
-          final nombre = Expanded(
-            child: Text(
-              variante.nombre,
-              style: TextStyle(
-                color: variante.activa
-                    ? AppTheme.marron
-                    : AppTheme.textoSecundario,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+          final nombre = Text(
+            variante.nombre,
+            style: TextStyle(
+              color: variante.activa
+                  ? AppTheme.marron
+                  : AppTheme.textoSecundario,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           );
           final campo = SizedBox(
@@ -363,7 +361,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                nombre,
+                Align(alignment: Alignment.centerLeft, child: nombre),
                 const SizedBox(height: 8),
                 campo,
                 const SizedBox(height: 8),
@@ -374,7 +372,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
           return Row(
             children: [
-              nombre,
+              Expanded(child: nombre),
               const SizedBox(width: 12),
               campo,
               const SizedBox(width: 10),
