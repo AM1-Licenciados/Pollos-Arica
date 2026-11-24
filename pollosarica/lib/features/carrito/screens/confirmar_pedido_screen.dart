@@ -29,6 +29,8 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
   bool _enviando = false;
   bool _cargandoQr = false;
   bool _cargandoCliente = true;
+  bool _notificandoPago = false;
+  bool _pagoNotificado = false;
 
   String? _qrUrl;
   PedidoCreado? _pedidoCreado;
@@ -178,6 +180,45 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
     } finally {
       if (mounted) {
         setState(() => _enviando = false);
+      }
+    }
+  }
+
+  Future<void> _notificarPago() async {
+    final pedido = _pedidoCreado;
+    if (pedido == null ||
+        pedido.metodoPago != 'qr' ||
+        _notificandoPago ||
+        _pagoNotificado) {
+      return;
+    }
+
+    setState(() => _notificandoPago = true);
+
+    try {
+      await PedidoService.instance.notificarPagoQr(pedido.id);
+
+      if (!mounted) return;
+
+      setState(() => _pagoNotificado = true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Avisamos al personal. Tu pago está pendiente de verificación.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _notificandoPago = false);
       }
     }
   }
@@ -591,6 +632,94 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                   ],
                 ),
               ),
+
+              if (pedido.metodoPago == 'qr') ...[
+                const SizedBox(height: 18),
+                if (_qrUrl != null && _qrUrl!.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: _decoracion(),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Realiza tu transferencia',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.marron,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Image.network(
+                          _qrUrl!,
+                          height: 190,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.qr_code_2,
+                            size: 90,
+                            color: AppTheme.naranja,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Transfiere ${_precio(pedido.total)}. '
+                          'El personal verificará el movimiento en la banca.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppTheme.textoSecundario,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: _notificandoPago || _pagoNotificado
+                          ? null
+                          : _notificarPago,
+                      icon: _notificandoPago
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              _pagoNotificado
+                                  ? Icons.check_circle_outline
+                                  : Icons.account_balance_wallet_outlined,
+                            ),
+                      label: Text(
+                        _pagoNotificado
+                            ? 'Pago notificado'
+                            : 'Ya realicé el pago',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _pagoNotificado
+                        ? 'Tu aviso fue enviado. Espera la verificación del personal.'
+                        : 'Pulsa este botón después de realizar la transferencia.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.textoSecundario,
+                      fontSize: 12,
+                    ),
+                  ),
+                ] else
+                  const Text(
+                    'No pudimos mostrar el QR. Comunícate con el personal '
+                    'para recibir instrucciones de pago.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textoSecundario),
+                  ),
+              ],
 
               const SizedBox(height: 22),
 
