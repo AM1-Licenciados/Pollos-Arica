@@ -454,7 +454,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       CarritoService.instance.cantidadTotal > 0)
                     Positioned(
                       right: 18,
-                      bottom: 14,
+                      bottom: 82 + MediaQuery.of(context).viewPadding.bottom,
                       child: _construirCapsulaCarrito(),
                     ),
                 ],
