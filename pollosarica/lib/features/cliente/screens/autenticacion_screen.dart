@@ -128,6 +128,10 @@ class _AutenticacionScreenState extends State<AutenticacionScreen> {
         );
         if (mounted) Navigator.of(context).pop(true);
       }
+    } on CorreoYaRegistradoException {
+      if (mounted) {
+        _mensaje('Este correo ya tiene una cuenta. Inicia sesión o utiliza otro correo.');
+      }
     } on AuthException catch (error) {
       if (mounted) _mensaje(_traducirError(error));
     } catch (_) {
