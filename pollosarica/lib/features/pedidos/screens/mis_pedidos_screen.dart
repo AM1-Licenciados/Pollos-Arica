@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../carrito/data/pedido_service.dart';
 import '../models/pedido_cliente.dart';
 import '../services/mis_pedidos_service.dart';
 
@@ -14,6 +15,7 @@ class MisPedidosScreen extends StatefulWidget {
 class _MisPedidosScreenState extends State<MisPedidosScreen> {
   late Future<List<PedidoCliente>> _pedidosFuture;
   String _filtroSeleccionado = 'Todos';
+  final Set<String> _pedidosNotificandoPago = {};
 
   @override
   void initState() {
@@ -33,6 +35,39 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     });
 
     await nuevoFuture;
+  }
+
+  Future<void> _notificarPagoDesdeHistorial(PedidoCliente pedido) async {
+    if (_pedidosNotificandoPago.contains(pedido.id)) return;
+
+    setState(() => _pedidosNotificandoPago.add(pedido.id));
+
+    try {
+      await PedidoService.instance.notificarPagoQr(pedido.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Avisamos al personal. Tu pago está pendiente de verificación.',
+          ),
+        ),
+      );
+
+      await _actualizarPedidos();
+    } catch (error) {
+      if (!mounted) return;
+
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _pedidosNotificandoPago.remove(pedido.id));
+      }
+    }
   }
 
   bool _estaEnCurso(PedidoCliente pedido) {
@@ -492,6 +527,49 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
             _etiquetaPago(pedido.estadoPago),
             color: _colorPago(pedido.estadoPago),
           ),
+          if (pedido.metodoPago == 'qr' &&
+              pedido.estadoPago == 'pendiente' &&
+              !{
+                PedidoEstadosCliente.rechazado,
+                PedidoEstadosCliente.cancelado,
+              }.contains(pedido.estado)) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _pedidosNotificandoPago.contains(pedido.id)
+                    ? null
+                    : () => _notificarPagoDesdeHistorial(pedido),
+                icon: _pedidosNotificandoPago.contains(pedido.id)
+                    ? const SizedBox(
+                        width: 17,
+                        height: 17,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.account_balance_wallet_outlined),
+                label: const Text('Ya realicé el pago'),
+              ),
+            ),
+            const Text(
+              'Después de transferir, avisa al personal para que verifique el movimiento.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textoSecundario,
+                fontSize: 11,
+              ),
+            ),
+          ],
+          if (pedido.metodoPago == 'qr' &&
+              pedido.estadoPago == 'por_verificar') ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Tu pago fue notificado y está pendiente de verificación.',
+              style: TextStyle(
+                color: AppTheme.textoSecundario,
+                fontSize: 12,
+              ),
+            ),
+          ],
           _construirDato(
             'Subtotal',
             'Bs ${pedido.subtotal.toStringAsFixed(2)}',
