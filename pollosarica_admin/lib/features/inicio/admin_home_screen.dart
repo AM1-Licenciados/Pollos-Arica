@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../pedidos/screens/pedidos_screen.dart';
@@ -343,18 +342,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 2:
         return const ProductosAdminScreen();
       case 3:
-        // El recortador web abre un Dialog y necesita MaterialLocalizations
-        // disponibles explícitamente en su subárbol.
-        return Localizations.override(
-          context: context,
-          locale: const Locale('es'),
-          delegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          child: const QrPagoAdminScreen(),
-        );
+        return const QrPagoAdminScreen();
       case 4:
         return const ConfiguracionNegocioScreen();
       default:
