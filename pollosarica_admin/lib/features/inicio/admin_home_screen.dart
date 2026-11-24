@@ -16,6 +16,7 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _indiceSeleccionado = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static const List<_OpcionMenu> _opciones = [
     _OpcionMenu('Inicio', Icons.grid_view_rounded),
@@ -37,8 +38,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   void _seleccionarOpcion(int indice) {
     setState(() => _indiceSeleccionado = indice);
-    if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-      Navigator.of(context).pop();
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      _scaffoldKey.currentState?.closeDrawer();
     }
   }
 
@@ -50,6 +51,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
         if (escritorio) {
           return Scaffold(
+            key: _scaffoldKey,
             body: Row(
               children: [
                 _construirMenuLateral(),
@@ -67,6 +69,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         }
 
         return Scaffold(
+          key: _scaffoldKey,
           drawer: Drawer(
             width: 285,
             backgroundColor: AppTheme.marron,
@@ -348,7 +351,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('¡Hola, $_saludo!',
+              const Text('¡Bienvenido!',
                   style: TextStyle(
                       color: AppTheme.textoSecundario,
                       fontSize: 13,
@@ -426,8 +429,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-
-  static const String _saludo = 'bienvenido';
 
   Widget _construirBannerPrincipal() {
     return Container(
