@@ -142,7 +142,11 @@ begin
        or old.metodo_pago <> 'qr'
        or old.estado_pago <> 'pendiente'
        or new.estado_pago <> 'por_verificar'
-       or new.estado is distinct from old.estado then
+       or new.estado is distinct from old.estado
+       -- El cliente no puede aprovechar esta politica para modificar
+       -- otras columnas que ya tengan permisos UPDATE por columna.
+       or new.cliente_llego is distinct from old.cliente_llego
+       or new.momento_preparacion is distinct from old.momento_preparacion then
       raise exception 'No tienes permiso para realizar este cambio.';
     end if;
   else
