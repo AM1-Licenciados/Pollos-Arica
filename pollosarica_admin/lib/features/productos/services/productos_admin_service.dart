@@ -128,7 +128,7 @@ class ProductosAdminService {
 
     await _supabase.from('variantes_producto').insert({
       'producto_id': productoId,
-      'nombre': '2 L',
+      'nombre': 'Unidad',
       'precio': precio,
       'es_predeterminada': true,
       'activa': true,
