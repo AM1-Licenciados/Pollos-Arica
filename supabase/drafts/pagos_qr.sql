@@ -33,7 +33,9 @@ begin;
 
 -- 1. Esquema privado para funciones internas (no exponer por Data API).
 create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
+-- Verificar en Dashboard que el esquema private no este expuesto por
+-- la configuracion de Data API. No se revocan permisos globales del
+-- esquema para evitar afectar objetos privados preexistentes.
 
 -- 2. Auditoria de cambios de pago.
 create table if not exists public.pagos_qr_auditoria (
@@ -171,10 +173,10 @@ $$;
 
 -- La funcion invoker se ejecuta con los permisos del solicitante.
 revoke all on function private.validar_transicion_pedido_qr()
-  from public, anon;
-grant usage on schema private to authenticated;
-grant execute on function private.validar_transicion_pedido_qr()
-  to authenticated;
+  from public, anon, authenticated;
+
+-- Las funciones se invocan exclusivamente mediante triggers creados por
+-- el propietario de la migracion; no se publican como RPC.
 
 -- 5. Cliente puede actualizar su propia fila para notificar el pago.
 --    El trigger limita el cambio permitido a pendiente -> por_verificar.
