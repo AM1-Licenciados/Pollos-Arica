@@ -413,7 +413,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
             crossAxisCount: columnas,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
-            mainAxisExtent: 230,
+            mainAxisExtent: 260,
           ),
           itemBuilder: (context, index) {
             final pedido = pedidos[index];
