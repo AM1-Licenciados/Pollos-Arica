@@ -1143,34 +1143,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
         ),
       );
 
-  Widget _campo(
-    TextEditingController controller,
-    String hint,
-    IconData icono, {
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) =>
-      TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        enabled: !_enviando,
-        decoration: InputDecoration(
-          prefixIcon: Icon(
-            icono,
-            color: AppTheme.naranja,
-          ),
-          hintText: hint,
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          errorMaxLines: 2,
-        ),
-      );
-
   BoxDecoration _decoracion() => BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
