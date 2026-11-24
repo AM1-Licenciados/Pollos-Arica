@@ -252,11 +252,13 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(guardado == true
-              ? 'Código QR guardado en tu galería.'
-              : kIsWeb
+          content: Text(kIsWeb
+              ? (guardado == true
                   ? 'Se abrió el QR en el navegador para guardarlo.'
-                  : 'No se pudo guardar el QR en la galería.'),
+                  : 'No se pudo abrir el QR en el navegador.')
+              : (guardado == true
+                  ? 'Código QR guardado en tu galería.'
+                  : 'No se pudo guardar el QR en la galería.')),
         ),
       );
     } catch (error) {
