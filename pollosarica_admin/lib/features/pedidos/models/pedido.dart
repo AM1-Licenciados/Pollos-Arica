@@ -3,6 +3,7 @@ class Pedido {
   final String id;
   final String codigo;
   final String clienteId;
+  final String authUserId;
   final String nombreCliente;
   final String celularCliente;
   final String estado;
@@ -21,6 +22,7 @@ class Pedido {
     required this.id,
     required this.codigo,
     required this.clienteId,
+    required this.authUserId,
     required this.nombreCliente,
     required this.celularCliente,
     required this.estado,
@@ -45,6 +47,7 @@ class Pedido {
       id: map['id'].toString(),
       codigo: map['codigo']?.toString() ?? '',
       clienteId: map['cliente_id']?.toString() ?? '',
+      authUserId: map['auth_user_id']?.toString() ?? '',
       nombreCliente: cliente?['nombre']?.toString() ?? 'Cliente',
       celularCliente: cliente?['celular']?.toString() ?? '',
       estado: map['estado']?.toString() ?? 'pendiente',
