@@ -2,7 +2,11 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CorreoYaRegistradoException implements Exception {\n  const CorreoYaRegistradoException();\n}\n\nclass AutenticacionService {
+class CorreoYaRegistradoException implements Exception {
+  const CorreoYaRegistradoException();
+}
+
+class AutenticacionService {
   AutenticacionService._();
 
   static final AutenticacionService instance = AutenticacionService._();
