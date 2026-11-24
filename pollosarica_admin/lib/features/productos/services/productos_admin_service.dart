@@ -126,25 +126,15 @@ class ProductosAdminService {
       return;
     }
 
-    final respuesta = await _supabase
-        .from('variantes_producto')
-        .insert({
-          'producto_id': productoId,
-          'nombre': '2 L',
-          'precio': precio,
-          'es_predeterminada': true,
-          'activa': true,
-          'orden': 0,
-          'disponible': true,
-        })
-        .select('id');
-
-    if (respuesta.isEmpty) {
-      throw Exception(
-        'No se pudo crear el precio. Comprueba que tu usuario sea '
-        'administrador activo.',
-      );
-    }
+    await _supabase.from('variantes_producto').insert({
+      'producto_id': productoId,
+      'nombre': '2 L',
+      'precio': precio,
+      'es_predeterminada': true,
+      'activa': true,
+      'orden': 0,
+      'disponible': true,
+    });
   }
 
   void _validarPrecio(double precio) {
