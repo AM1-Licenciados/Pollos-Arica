@@ -34,7 +34,14 @@ class AutenticacionService {
       },
     );
 
-    // Supabase oculta intencionalmente si un correo ya existe.\n    // En ese caso devuelve un usuario ofuscado con identities vacío.\n    if (respuesta.user != null &&\n        (respuesta.user!.identities?.isEmpty ?? false)) {\n      throw const CorreoYaRegistradoException();\n    }\n\n    return respuesta.session != null;
+    // Supabase oculta intencionalmente si un correo ya existe.
+    // En ese caso devuelve un usuario ofuscado con identities vacío.
+    if (respuesta.user != null &&
+        (respuesta.user!.identities?.isEmpty ?? false)) {
+      throw const CorreoYaRegistradoException();
+    }
+
+    return respuesta.session != null;
   }
 
   Future<void> iniciarSesion({
