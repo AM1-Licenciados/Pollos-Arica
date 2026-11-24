@@ -106,6 +106,42 @@ class PedidoAdminService {
       throw Exception('Estado de pago no válido.');
     }
 
+    // Consultar el estado actual para validar el flujo antes de escribir.
+    // PostgreSQL seguirá aplicando la validación definitiva mediante RLS
+    // y el trigger de protección del pedido.
+    final pedidoActual = await _supabase
+        .from('pedidos')
+        .select('metodo_pago, estado_pago')
+        .eq('id', pedidoId)
+        .single();
+
+    final metodoPago = pedidoActual['metodo_pago']?.toString();
+    final estadoActual = pedidoActual['estado_pago']?.toString();
+
+    if (metodoPago == 'qr') {
+      final transicionPermitida = estadoActual == 'por_verificar' &&
+          (nuevoEstado == 'pagado' || nuevoEstado == 'rechazado');
+
+      if (!transicionPermitida) {
+        throw Exception(
+          'Un pago QR solo puede confirmarse o rechazarse '
+          'cuando el cliente lo notificó y está por verificar.',
+        );
+      }
+    } else if (metodoPago == 'efectivo') {
+      final transicionPermitida =
+          estadoActual == 'pendiente' && nuevoEstado == 'pagado';
+
+      if (!transicionPermitida) {
+        throw Exception(
+          'El pago en efectivo solo puede marcarse como pagado '
+          'desde el estado pendiente.',
+        );
+      }
+    } else {
+      throw Exception('Método de pago no reconocido.');
+    }
+
     await _supabase
         .from('pedidos')
         .update({
