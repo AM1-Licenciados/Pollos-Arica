@@ -1,5 +1,5 @@
 -- Pollos Arica
--- BORRADOR NO EJECUTABLE EN PRODUCCION
+-- SQL APLICADO EN SUPABASE (2026-11-24). Conservado como referencia.
 -- Flujo de verificacion manual de pagos QR.
 --
 -- Objetivo:
@@ -12,7 +12,7 @@
 -- 4. Registrar cada cambio de estado de pago en una auditoria.
 --
 -- IMPORTANTE:
--- - Este archivo NO ha sido aplicado.
+-- - Aplicado mediante migracion secure_qr_payment_flow_and_database_hardening.
 -- - Requiere pruebas en un entorno PostgreSQL aislado antes de produccion.
 -- - Se basa en el esquema inspeccionado el 2026-11-23.
 -- - Restringe crear_pedido al uso interno del wrapper SECURITY DEFINER.
@@ -290,3 +290,20 @@ commit;
 -- que no quedaron tablas ni esquema de prueba persistentes.
 -- Esta prueba valida la logica en tablas aisladas, no sustituye una prueba
 -- final de migracion ni una validacion desde las aplicaciones Flutter.
+
+--
+-- VALIDACION EN LA BASE REAL (2026-11-24, transacciones revertidas):
+-- - Wrapper crear_pedido_con_seguimiento invocado como authenticated:
+--   creo un pedido QR de prueba, calculo Bs 17 desde el catalogo y devolvio
+--   pedido_id + seguimiento_token. La transaccion fue revertida.
+-- - Cliente propietario: pendiente -> por_verificar permitido.
+-- - Auditoria: se registro notificacion_cliente.
+-- - Admin activo: por_verificar -> pagado y avance a en_preparacion permitidos.
+-- - Admin activo: por_verificar -> rechazado permitido.
+-- - Efectivo: pendiente -> pagado permitido.
+-- - Se registraron los eventos de auditoria esperados.
+-- - Intento del cliente de marcar pagado: bloqueado por el trigger.
+-- - La fila de prueba se revirtio; no quedan pedidos de prueba.
+-- - Los 13 pedidos historicos se conservaron.
+-- - Verificacion de Advisor: solo quedan hallazgos intencionales/explicados
+--   para RPCs SECURITY DEFINER necesarias y proteccion Auth pendiente.
