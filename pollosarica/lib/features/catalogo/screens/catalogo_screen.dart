@@ -1084,7 +1084,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Widget _construirCapsulaCarrito() {
-    final cantidad = CarritoService.instance.cantidadTotal;
+    // Cuenta productos distintos, no unidades ni variantes repetidas.
+    final cantidad = CarritoService.instance.items
+        .map((item) => item.producto.id)
+        .toSet()
+        .length;
     return Material(
       color: AppTheme.naranja,
       elevation: 7,
