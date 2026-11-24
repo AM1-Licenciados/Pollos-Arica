@@ -1,36 +1,45 @@
 # Modelo de base de datos
 
-Pollos Arica utiliza PostgreSQL mediante Supabase. La información se organiza en tablas relacionadas mediante claves primarias y foráneas.
+Pollos Arica utiliza Supabase como backend y PostgreSQL como base de datos. Este documento resume las entidades y operaciones referenciadas por el código de la aplicación del cliente. **No sustituye las migraciones SQL ni representa una inspección directa del esquema desplegado.**
 
-## Tablas principales
+## Tablas referenciadas por la aplicación
 
-| Tabla | Responsabilidad |
+| Tabla | Uso identificado en el código |
 |---|---|
-| `categorias` | Categorías del menú, descripción, estado y orden |
-| `productos` | Datos generales de los productos, categoría, imagen y disponibilidad |
-| `variantes_producto` | Presentaciones o variantes, precios y disponibilidad |
-| `clientes` | Nombre y número de celular del cliente |
-| `pedidos` | Información general de la compra, cliente, código, estados, pago y total |
-| `detalle_pedidos` | Productos, variantes, cantidades, precios y subtotales de cada pedido |
-| `configuracion_negocio` | Datos configurables del negocio, incluida la URL de la imagen del QR |
+| `categorias` | Consulta de categorías activas y su orden |
+| `productos` | Consulta de productos activos y sus datos de catálogo |
+| `variantes_producto` | Variantes, precios, disponibilidad y presentación de productos |
+| `perfiles_clientes` | Consulta y actualización de datos y fotografía del perfil |
+| `configuracion_negocio` | Consulta de la URL de la imagen QR |
 
-## Relaciones
+El flujo de pedidos también utiliza funciones RPC y estructuras de respuesta que hacen referencia a pedidos y sus detalles. La estructura exacta de esas tablas debe verificarse con el esquema SQL desplegado.
 
-- Una categoría puede tener varios productos.
+## Relaciones conceptuales
+
+De acuerdo con las consultas del catálogo:
+
+- Una categoría puede agrupar varios productos.
 - Un producto puede tener varias variantes.
-- Un cliente puede realizar varios pedidos.
-- Un pedido puede contener varios registros en `detalle_pedidos`.
-- Cada detalle puede referenciar un producto y una variante.
 
-## ¿Por qué clientes, pedidos y detalles están separados?
+En el modelo de pedidos descrito por las respuestas de la aplicación:
 
-La tabla `clientes` almacena los datos de la persona una sola vez. La tabla `pedidos` representa cada compra y referencia al cliente. La tabla `detalle_pedidos` almacena cada artículo incluido en esa compra.
+- Un pedido puede incluir varios detalles.
+- Cada detalle representa un producto, una variante, una cantidad y sus importes.
 
-Así, un cliente puede realizar múltiples pedidos y un pedido puede incluir múltiples productos, sin repetir toda la información del cliente o crear un pedido independiente por artículo.
+Estas relaciones deben confirmarse con las claves foráneas reales de PostgreSQL.
 
-## Estados del pedido
+## Funciones RPC referenciadas
 
-Los estados contemplados son:
+| Función | Uso desde la aplicación |
+|---|---|
+| `crear_pedido_con_seguimiento` | Registrar un pedido y obtener datos y credenciales de seguimiento |
+| `obtener_mis_pedidos` | Recuperar pedidos usando credenciales de seguimiento |
+
+La aplicación espera que la función de creación devuelva al menos el identificador del pedido, código, total y token de seguimiento. Los nombres y tipos de parámetros deben verificarse contra la definición SQL real.
+
+## Estados de pedidos y pagos
+
+La interfaz contempla estados de pedido como:
 
 - `pendiente`
 - `aceptado`
@@ -40,28 +49,26 @@ Los estados contemplados son:
 - `rechazado`
 - `cancelado`
 
-## Estados del pago
-
-El estado del pago se gestiona por separado:
+El estado de pago se presenta por separado y contempla:
 
 - `pendiente`
 - `por_verificar`
 - `pagado`
 - `rechazado`
 
-Esta separación permite conocer el avance operativo de la compra sin confundirlo con la confirmación del pago.
-
-## Funciones de base de datos
-
-- `crear_pedido`: valida y registra un pedido, calculando los importes con información de la base de datos.
-- `crear_pedido_con_seguimiento`: amplía el flujo de creación para devolver credenciales de seguimiento.
-- `obtener_mis_pedidos`: consulta pedidos a partir de los identificadores y tokens de seguimiento enviados por el cliente.
-- `es_admin_activo`: verifica si el usuario autenticado tiene un perfil administrativo activo.
-
-Los nombres y parámetros deben contrastarse con las migraciones SQL definitivas cuando se recupere el código y los scripts originales.
+La lista definitiva de valores permitidos debe contrastarse con las restricciones o tipos definidos en PostgreSQL.
 
 ## Seguridad
 
-Se utiliza Row Level Security (RLS) para restringir las operaciones sobre datos sensibles. El acceso administrativo a pedidos, detalles y clientes requiere autenticación y la validación del perfil administrador.
+El acceso a las tablas y funciones debe protegerse mediante Row Level Security (RLS), privilegios SQL y validaciones del lado servidor. La clave `service_role` nunca debe incluirse en una aplicación Flutter cliente.
 
-La aplicación cliente no debe incluir la clave secreta `service_role`. Las operaciones públicas deben limitarse mediante políticas y funciones seguras del servidor.
+## Verificaciones necesarias
+
+Para cerrar este modelo como documentación técnica definitiva, incorporar o consultar:
+
+1. Migraciones SQL del esquema actual.
+2. Claves primarias, foráneas, índices y restricciones.
+3. Políticas RLS por tabla.
+4. Definiciones y permisos de las funciones RPC.
+5. Políticas de Storage para las imágenes.
+6. Triggers que relacionan usuarios autenticados con perfiles de cliente.
