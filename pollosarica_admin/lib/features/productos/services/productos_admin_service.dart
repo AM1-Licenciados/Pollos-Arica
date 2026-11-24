@@ -29,12 +29,14 @@ class VariantePrecioAdmin {
 class ProductoPrecioAdmin {
   final String id;
   final String nombre;
+  final String? imagenUrl;
   final int orden;
   final List<VariantePrecioAdmin> variantes;
 
   const ProductoPrecioAdmin({
     required this.id,
     required this.nombre,
+    required this.imagenUrl,
     required this.orden,
     required this.variantes,
   });
@@ -51,6 +53,7 @@ class ProductoPrecioAdmin {
     return ProductoPrecioAdmin(
       id: map['id'].toString(),
       nombre: map['nombre']?.toString() ?? 'Producto',
+      imagenUrl: map['imagen_url']?.toString(),
       orden: (map['orden'] as num?)?.toInt() ?? 0,
       variantes: variantes,
     );
@@ -68,7 +71,7 @@ class ProductosAdminService {
     final respuesta = await _supabase
         .from('productos')
         .select(
-          'id, nombre, orden, variantes_producto '
+          'id, nombre, imagen_url, orden, variantes_producto '
           '(id, nombre, precio, activa, orden)',
         )
         .eq('activo', true)
@@ -83,9 +86,7 @@ class ProductosAdminService {
     required String varianteId,
     required double precio,
   }) async {
-    if (!precio.isFinite || precio <= 0 || precio > 100000) {
-      throw Exception('Introduce un precio mayor que 0 y menor que 100000.');
-    }
+    _validarPrecio(precio);
 
     final respuesta = await _supabase
         .from('variantes_producto')
@@ -98,6 +99,57 @@ class ProductosAdminService {
         'No se pudo guardar el precio. Comprueba que tu usuario sea '
         'administrador activo y que la variante siga disponible.',
       );
+    }
+  }
+
+  /// Crea el precio inicial de productos que todavía no tienen variantes.
+  /// Si otro administrador ya creó una variante, actualiza esa en lugar
+  /// de generar una variante duplicada.
+  Future<void> crearOActualizarPrecioInicial({
+    required String productoId,
+    required double precio,
+  }) async {
+    _validarPrecio(precio);
+
+    final existentes = await _supabase
+        .from('variantes_producto')
+        .select('id')
+        .eq('producto_id', productoId)
+        .order('orden')
+        .limit(1);
+
+    if (existentes.isNotEmpty) {
+      await actualizarPrecio(
+        varianteId: existentes.first['id'].toString(),
+        precio: precio,
+      );
+      return;
+    }
+
+    final respuesta = await _supabase
+        .from('variantes_producto')
+        .insert({
+          'producto_id': productoId,
+          'nombre': '2 L',
+          'precio': precio,
+          'es_predeterminada': true,
+          'activa': true,
+          'orden': 0,
+          'disponible': true,
+        })
+        .select('id');
+
+    if (respuesta.isEmpty) {
+      throw Exception(
+        'No se pudo crear el precio. Comprueba que tu usuario sea '
+        'administrador activo.',
+      );
+    }
+  }
+
+  void _validarPrecio(double precio) {
+    if (!precio.isFinite || precio <= 0 || precio > 100000) {
+      throw Exception('Introduce un precio mayor que 0 y menor que 100000.');
     }
   }
 }
