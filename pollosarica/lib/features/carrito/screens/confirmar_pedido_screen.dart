@@ -688,6 +688,16 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                         style: const TextStyle(fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.naranja)),
+                    if (pedido.metodoPago != 'qr') ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Total: ${_precio(pedido.total)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.marron,
+                        ),
+                      ),
+                    ],
 
                   ],
                 ),
