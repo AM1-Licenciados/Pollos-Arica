@@ -142,10 +142,18 @@ begin
   else
     -- El administrador solo puede resolver pagos que esperan verificacion.
     if new.estado_pago is distinct from old.estado_pago then
-      if old.metodo_pago <> 'qr'
-         or old.estado_pago <> 'por_verificar'
-         or new.estado_pago not in ('pagado', 'rechazado') then
-        raise exception 'Transicion de pago no permitida.';
+      if old.metodo_pago = 'qr' then
+        if old.estado_pago <> 'por_verificar'
+           or new.estado_pago not in ('pagado', 'rechazado') then
+          raise exception 'Transicion de pago QR no permitida.';
+        end if;
+      elsif old.metodo_pago = 'efectivo' then
+        -- Conservar el flujo existente de caja: el administrador puede
+        -- registrar el cobro en efectivo como pagado.
+        if old.estado_pago <> 'pendiente'
+           or new.estado_pago <> 'pagado' then
+          raise exception 'Transicion de pago en efectivo no permitida.';
+        end if;
       end if;
     end if;
   end if;
@@ -223,7 +231,8 @@ commit;
 -- F. Admin activo: por_verificar -> rechazado permitido.
 -- G. Admin: QR no pagado -> en_preparacion/listo/entregado debe fallar.
 -- H. Admin: QR pagado -> en_preparacion permitido.
--- I. Efectivo: flujo actual debe seguir funcionando.
+-- I. Efectivo: admin puede registrar pendiente -> pagado y el flujo actual
+--    de pedidos en efectivo debe seguir funcionando.
 -- J. Pedidos historicos: revisar estados existentes antes de habilitar.
 --
 -- REVISIONES PENDIENTES:
