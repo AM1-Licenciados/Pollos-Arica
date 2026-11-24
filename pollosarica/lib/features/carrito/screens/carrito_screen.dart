@@ -57,9 +57,11 @@ class CarritoScreen extends StatelessWidget {
                             nombre: item.producto.nombre,
                             seccion: item.producto.seccion,
                             variante: item.variante.nombre,
-                            imagenUrl: (item.variante.imagenUrl?.trim().isNotEmpty ?? false)
-                                ? item.variante.imagenUrl!.trim()
-                                : item.producto.imagenUrl,
+                            // El catálogo utiliza la imagen del producto.
+                            // La variante puede conservar una imagen genérica antigua.
+                            imagenUrl: (item.producto.imagenUrl?.trim().isNotEmpty ?? false)
+                                ? item.producto.imagenUrl!.trim()
+                                : item.variante.imagenUrl,
                             precio: item.variante.precio,
                             cantidad: item.cantidad,
                             subtotal: item.subtotal,
