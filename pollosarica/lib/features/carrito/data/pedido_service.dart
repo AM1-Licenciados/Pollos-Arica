@@ -103,7 +103,7 @@ class PedidoService {
   }
 
   Future<String?> obtenerUrlComprobanteQr(String authUserId, String pedidoId) async {
-    if (!_supabase.auth.currentUser?.id.isNotEmpty ?? true) return null;
+    if (_supabase.auth.currentUser == null) return null;
     final ruta = '$authUserId/$pedidoId/comprobante';
     try {
       return await _supabase.storage
