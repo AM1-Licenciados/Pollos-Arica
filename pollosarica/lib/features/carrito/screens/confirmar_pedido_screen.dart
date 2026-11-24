@@ -1,5 +1,9 @@
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../catalogo/screens/catalogo_screen.dart';
@@ -31,6 +35,11 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
   bool _cargandoCliente = true;
   bool _notificandoPago = false;
   bool _pagoNotificado = false;
+  bool _subiendoComprobante = false;
+  bool _descargandoQr = false;
+  XFile? _comprobanteSeleccionado;
+  Uint8List? _comprobanteBytes;
+  bool _comprobanteSubido = false;
 
   String? _qrUrl;
   PedidoCreado? _pedidoCreado;
@@ -184,12 +193,89 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
     }
   }
 
+
+  Future<void> _seleccionarComprobante() async {
+    if (_pedidoCreado == null || _pagoNotificado || _subiendoComprobante) return;
+    try {
+      final archivo = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 88,
+        maxWidth: 2000,
+      );
+      if (archivo == null || !mounted) return;
+
+      final bytes = await archivo.readAsBytes();
+      if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+        throw Exception('La imagen debe pesar como máximo 5 MB.');
+      }
+
+      setState(() {
+        _subiendoComprobante = true;
+        _comprobanteSeleccionado = archivo;
+        _comprobanteBytes = bytes;
+        _comprobanteSubido = false;
+      });
+
+      await PedidoService.instance.subirComprobanteQr(
+        pedidoId: _pedidoCreado!.id,
+        archivo: archivo,
+      );
+
+      if (!mounted) return;
+      setState(() => _comprobanteSubido = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comprobante adjuntado correctamente.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _comprobanteSubido = false;
+        _comprobanteSeleccionado = null;
+        _comprobanteBytes = null;
+      });
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo adjuntar: $mensaje')),
+      );
+    } finally {
+      if (mounted) setState(() => _subiendoComprobante = false);
+    }
+  }
+
+  Future<void> _descargarQr() async {
+    final url = _qrUrl;
+    if (url == null || url.isEmpty || _descargandoQr) return;
+    setState(() => _descargandoQr = true);
+    try {
+      final guardado = await GallerySaver.saveImage(
+        url,
+        albumName: 'Pollos Arica',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(guardado == true
+              ? 'Código QR guardado en tu galería.'
+              : 'No se pudo guardar el QR en la galería.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al descargar el QR: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _descargandoQr = false);
+    }
+  }
+
   Future<void> _notificarPago() async {
     final pedido = _pedidoCreado;
     if (pedido == null ||
         pedido.metodoPago != 'qr' ||
         _notificandoPago ||
-        _pagoNotificado) {
+        _pagoNotificado ||
+        !_comprobanteSubido) {
       return;
     }
 
@@ -559,82 +645,58 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
     );
   }
 
-  Widget _construirExito(PedidoCreado pedido) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
+  Widget _construirExito(PedidoCreado pedido) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 94,
-                height: 94,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
                   color: AppTheme.naranja.withValues(alpha: .12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppTheme.naranja,
-                  size: 58,
-                ),
+                child: const Icon(Icons.check_circle_rounded,
+                    color: AppTheme.naranja, size: 54),
               ),
-
-              const SizedBox(height: 22),
-
-              const Text(
-                '¡Pedido registrado!',
-                style: TextStyle(
-                  fontSize: 23,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.marron,
-                ),
-              ),
-
+              const SizedBox(height: 18),
+              const Text('¡Pedido registrado!',
+                  style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold,
+                      color: AppTheme.marron)),
               const SizedBox(height: 8),
-
               const Text(
                 'Tu pedido fue enviado a Pollos Arica y está pendiente de revisión.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textoSecundario),
               ),
-
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 18),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: _decoracion(),
                 child: Column(
                   children: [
-                    const Text(
-                      'Código de pedido',
-                      style: TextStyle(
-                        color: AppTheme.textoSecundario,
-                      ),
-                    ),
+                    const Text('Código de pedido',
+                        style: TextStyle(color: AppTheme.textoSecundario)),
                     const SizedBox(height: 5),
-                    Text(
-                      pedido.codigo,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.naranja,
-                      ),
-                    ),
+                    Text(pedido.codigo,
+                        style: const TextStyle(fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.naranja)),
                     const SizedBox(height: 8),
-                    Text(
-                      'Total: ${_precio(pedido.total)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.marron,
-                      ),
-                    ),
+                    Text('Total: ${_precio(pedido.total)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold,
+                            color: AppTheme.marron)),
                   ],
                 ),
               ),
-
               if (pedido.metodoPago == 'qr') ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 if (_qrUrl != null && _qrUrl!.isNotEmpty) ...[
                   Container(
                     width: double.infinity,
@@ -642,96 +704,135 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                     decoration: _decoracion(),
                     child: Column(
                       children: [
-                        const Text(
-                          'Realiza tu transferencia',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.marron,
-                          ),
-                        ),
+                        const Text('Realiza tu transferencia',
+                            style: TextStyle(fontWeight: FontWeight.bold,
+                                color: AppTheme.marron)),
                         const SizedBox(height: 10),
-                        Image.network(
-                          _qrUrl!,
-                          height: 190,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.qr_code_2,
-                            size: 90,
-                            color: AppTheme.naranja,
+                        InteractiveViewer(
+                          minScale: 1,
+                          maxScale: 4,
+                          child: Image.network(_qrUrl!,
+                              height: 250, width: 250, fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => const Icon(
+                                  Icons.qr_code_2, size: 120,
+                                  color: AppTheme.naranja)),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _descargandoQr ? null : _descargarQr,
+                          icon: _descargandoQr
+                              ? const SizedBox(width: 16, height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.download_outlined),
+                          label: Text(_descargandoQr ? 'Guardando...' : 'Descargar QR'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.naranja,
+                            side: const BorderSide(color: AppTheme.naranja),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Transfiere ${_precio(pedido.total)}. '
-                          'El personal verificará el movimiento en la banca.',
+                          'Transfiere ${_precio(pedido.total)}. El personal verificará el movimiento en la banca.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppTheme.textoSecundario,
-                            fontSize: 12,
-                          ),
+                          style: const TextStyle(color: AppTheme.textoSecundario,
+                              fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
+                  const SizedBox(height: 14),
+                  Container(
                     width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: _notificandoPago || _pagoNotificado
-                          ? null
-                          : _notificarPago,
-                      icon: _notificandoPago
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Icon(
-                              _pagoNotificado
+                    padding: const EdgeInsets.all(14),
+                    decoration: _decoracion(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _pagoNotificado || _subiendoComprobante
+                              ? null : _seleccionarComprobante,
+                          icon: _subiendoComprobante
+                              ? const SizedBox(width: 18, height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : Icon(_comprobanteSubido
                                   ? Icons.check_circle_outline
-                                  : Icons.account_balance_wallet_outlined,
-                            ),
-                      label: Text(
-                        _pagoNotificado
-                            ? 'Pago notificado'
-                            : 'Ya realicé el pago',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _pagoNotificado
-                        ? 'Tu aviso fue enviado. Espera la verificación del personal.'
-                        : 'Pulsa este botón después de realizar la transferencia.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AppTheme.textoSecundario,
-                      fontSize: 12,
+                                  : Icons.image_outlined),
+                          label: Text(_subiendoComprobante
+                              ? 'Subiendo comprobante...'
+                              : _comprobanteSubido
+                                  ? 'Cambiar comprobante'
+                                  : 'Adjuntar comprobante'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.naranja,
+                            side: const BorderSide(color: AppTheme.naranja),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                        ),
+                        if (_comprobanteBytes != null) ...[
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(_comprobanteBytes!,
+                                height: 150, fit: BoxFit.contain),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _comprobanteSubido
+                                ? 'Comprobante cargado correctamente.'
+                                : 'Comprobante seleccionado.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 11,
+                                color: AppTheme.textoSecundario),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _notificandoPago || _pagoNotificado ||
+                                    !_comprobanteSubido
+                                ? null : _notificarPago,
+                            icon: _notificandoPago
+                                ? const SizedBox(width: 18, height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white))
+                                : Icon(_pagoNotificado
+                                    ? Icons.check_circle_outline
+                                    : Icons.account_balance_wallet_outlined),
+                            label: Text(_pagoNotificado
+                                ? 'Pago notificado'
+                                : 'Ya realicé el pago'),
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          _pagoNotificado
+                              ? 'Tu aviso fue enviado. Espera la verificación del personal.'
+                              : _comprobanteSubido
+                                  ? 'Comprobante adjuntado. Ahora puedes notificar tu pago.'
+                                  : 'Adjunta primero una imagen del comprobante para habilitar este botón.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: AppTheme.textoSecundario, fontSize: 11),
+                        ),
+                      ],
                     ),
                   ),
                 ] else
                   const Text(
-                    'No pudimos mostrar el QR. Comunícate con el personal '
-                    'para recibir instrucciones de pago.',
+                    'No pudimos mostrar el QR. Comunícate con el personal para recibir instrucciones de pago.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppTheme.textoSecundario),
                   ),
               ],
-
-              const SizedBox(height: 22),
-
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const CatalogoScreen(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const CatalogoScreen()),
                       (route) => false,
                     );
                   },
@@ -741,7 +842,9 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
             ],
           ),
         ),
-      );
+      ),
+    );
+  }
 
   Widget _construirQr() {
     if (_cargandoQr) {
