@@ -210,6 +210,15 @@ create policy clientes_notificar_pago_qr
 grant update (estado_pago, updated_at) on public.pedidos to authenticated;
 grant update (estado, updated_at) on public.pedidos to authenticated;
 
+-- 5.1. Cerrar el RPC interno de creacion directa.
+-- La app cliente utiliza crear_pedido_con_seguimiento; esta funcion
+-- interna es invocada por el wrapper SECURITY DEFINER como propietario.
+-- Se conserva el acceso al wrapper y a obtener_mis_pedidos, que se usa
+-- para recuperar pedidos mediante su token privado de seguimiento.
+revoke execute on function public.crear_pedido(
+  text, text, text, jsonb, text, text, text
+) from public, anon, authenticated;
+
 -- 6. Triggers.
 drop trigger if exists validar_transicion_pedido_qr
   on public.pedidos;
