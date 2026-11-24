@@ -163,52 +163,67 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
     final pedido = widget.pedido;
 
     return Dialog(
-      backgroundColor: const Color(0xFFFFF5E9),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 18,
       insetPadding: const EdgeInsets.all(18),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: AppTheme.borde),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 650, maxHeight: 750),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 12, 16),
+            Container(
+              padding: const EdgeInsets.fromLTRB(26, 22, 14, 19),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFFAF5),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+              ),
               child: Row(
                 children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE9D6),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(Icons.receipt_long_rounded,
+                        color: AppTheme.naranja, size: 21),
+                  ),
+                  const SizedBox(width: 13),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Detalle del pedido',
-                          style: TextStyle(
-                            color: AppTheme.marron,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        const Text('Detalle del pedido',
+                            style: TextStyle(color: AppTheme.marron,
+                                fontSize: 18, fontWeight: FontWeight.w800)),
                         const SizedBox(height: 4),
-                        Text(
-                          pedido.codigo,
-                          style: const TextStyle(
-                            color: AppTheme.textoSecundario,
-                          ),
-                        ),
+                        Text(pedido.codigo,
+                            style: const TextStyle(color: AppTheme.textoSecundario,
+                                fontSize: 11, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Cerrar',
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.textoSecundario,
+                    ),
+                    icon: const Icon(Icons.close_rounded, size: 19),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            const Divider(height: 1, color: AppTheme.borde),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(26, 22, 26, 26),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -324,6 +339,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                           : null,
                       decoration: const InputDecoration(
                         labelText: 'Estado del pago',
+                        prefixIcon: Icon(Icons.payments_outlined),
                       ),
                       items: _estadosPagoDisponibles.map((estado) {
                         return DropdownMenuItem(
@@ -356,6 +372,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                           : null,
                       decoration: const InputDecoration(
                         labelText: 'Actualizar estado',
+                        prefixIcon: Icon(Icons.sync_alt_rounded),
                       ),
                       items: _estadosPedidoDisponibles.map((estado) {
                         return DropdownMenuItem(
@@ -392,14 +409,24 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
 
   Widget _seccionTitulo(String titulo) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        titulo,
-        style: const TextStyle(
-          color: AppTheme.marron,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+      padding: const EdgeInsets.only(bottom: 13),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 18,
+            decoration: BoxDecoration(
+              color: AppTheme.naranja,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 9),
+          Text(titulo,
+              style: const TextStyle(
+                  color: AppTheme.marron,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800)),
+        ],
       ),
     );
   }
