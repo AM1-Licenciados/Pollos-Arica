@@ -375,7 +375,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                 Text(
                   pedidos.isEmpty
                       ? 'Tus próximos pedidos aparecerán aquí.'
-                      : '${enCurso} ${enCurso == 1 ? 'pedido en curso' : 'pedidos en curso'}',
+                      : '$enCurso ${enCurso == 1 ? 'pedido en curso' : 'pedidos en curso'}',
                   style: const TextStyle(
                     color: AppTheme.textoSecundario,
                     fontSize: 12,
