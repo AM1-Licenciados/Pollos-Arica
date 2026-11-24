@@ -12,7 +12,9 @@ import '../data/categoria_service.dart';
 import '../data/producto_service.dart';
 import '../models/categoria.dart';
 import '../models/producto.dart';
+import '../models/variante_producto.dart';
 import '../../carrito/screens/carrito_screen.dart';
+import '../../carrito/data/carrito_service.dart';
 import '../../cliente/services/autenticacion_service.dart';
 import '../../cliente/screens/autenticacion_screen.dart';
 import '../../pedidos/screens/mis_pedidos_screen.dart';
@@ -434,16 +436,32 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           datos.categorias,
         );
 
-        return Scaffold(
-          backgroundColor: AppTheme.crema,
-          extendBody: true,
-          body: SafeArea(
-            bottom: false,
-            child: _paginaSeleccionada == 0
-                ? _construirInicio(datos, productos)
-                : _construirPaginaSecundaria(),
-          ),
-          bottomNavigationBar: _construirNavegacion(),
+        return AnimatedBuilder(
+          animation: CarritoService.instance,
+          builder: (context, _) {
+            return Scaffold(
+              backgroundColor: AppTheme.crema,
+              extendBody: true,
+              body: Stack(
+                children: [
+                  SafeArea(
+                    bottom: false,
+                    child: _paginaSeleccionada == 0
+                        ? _construirInicio(datos, productos)
+                        : _construirPaginaSecundaria(),
+                  ),
+                  if (_paginaSeleccionada == 0 &&
+                      CarritoService.instance.cantidadTotal > 0)
+                    Positioned(
+                      right: 18,
+                      bottom: 14,
+                      child: _construirCapsulaCarrito(),
+                    ),
+                ],
+              ),
+              bottomNavigationBar: _construirNavegacion(),
+            );
+          },
         );
       },
     );
@@ -910,11 +928,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                           ),
                         ),
                       ),
-                      const Icon(
-                        Icons.add_circle,
-                        color: AppTheme.naranja,
-                        size: 22,
-                      ),
+                      _construirControlCarrito(producto),
                     ],
                   ),
                 ],
@@ -926,6 +940,202 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
+
+  List<VarianteProducto> _variantesDisponibles(Producto producto) {
+    return producto.variantes
+        .where((variante) => variante.activa && variante.disponible)
+        .toList()
+      ..sort((a, b) => a.orden.compareTo(b.orden));
+  }
+
+  int _cantidadEnCarrito(Producto producto) {
+    return CarritoService.instance.items
+        .where((item) => item.producto.id == producto.id)
+        .fold(0, (total, item) => total + item.cantidad);
+  }
+
+  Widget _construirControlCarrito(Producto producto) {
+    final variantes = _variantesDisponibles(producto);
+    final cantidad = _cantidadEnCarrito(producto);
+    final puedeAgregar = producto.disponible && variantes.isNotEmpty;
+
+    if (variantes.length == 1 && cantidad > 0) {
+      final variante = variantes.first;
+      final indice = CarritoService.instance.items.indexWhere(
+        (item) =>
+            item.producto.id == producto.id &&
+            item.variante.id == variante.id,
+      );
+      final item = indice >= 0 ? CarritoService.instance.items[indice] : null;
+
+      if (item != null) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF0E3),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _botonCantidadCatalogo(
+                icono: Icons.remove,
+                onTap: () => CarritoService.instance.cambiarCantidad(
+                  indice,
+                  item.cantidad - 1,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: Text(
+                  '${item.cantidad}',
+                  style: const TextStyle(
+                    color: AppTheme.marron,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _botonCantidadCatalogo(
+                icono: Icons.add,
+                onTap: item.cantidad < 20
+                    ? () => CarritoService.instance.cambiarCantidad(
+                          indice,
+                          item.cantidad + 1,
+                        )
+                    : null,
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: puedeAgregar
+          ? () {
+              if (variantes.length == 1) {
+                CarritoService.instance.agregarProducto(
+                  producto: producto,
+                  variante: variantes.first,
+                  cantidad: 1,
+                );
+              } else {
+                _abrirDetalle(producto);
+              }
+            }
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Icons.add_circle,
+              color: puedeAgregar ? AppTheme.naranja : Colors.grey,
+              size: 23,
+            ),
+            if (cantidad > 0)
+              Positioned(
+                right: -7,
+                top: -7,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.marron,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$cantidad',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _botonCantidadCatalogo({
+    required IconData icono,
+    required VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: SizedBox(
+        width: 23,
+        height: 23,
+        child: Icon(
+          icono,
+          size: 14,
+          color: onTap == null ? Colors.grey : AppTheme.naranja,
+        ),
+      ),
+    );
+  }
+
+  Widget _construirCapsulaCarrito() {
+    final cantidad = CarritoService.instance.cantidadTotal;
+    return Material(
+      color: AppTheme.naranja,
+      elevation: 7,
+      shadowColor: AppTheme.marron.withValues(alpha: 0.22),
+      borderRadius: BorderRadius.circular(28),
+      child: InkWell(
+        onTap: _abrirCarrito,
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.shopping_cart_rounded,
+                color: Colors.white,
+                size: 19,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Ver carrito',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Container(
+                constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$cantidad',
+                  style: const TextStyle(
+                    color: AppTheme.naranja,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _construirImagen(String? url) {
     if (url == null || url.trim().isEmpty) {
