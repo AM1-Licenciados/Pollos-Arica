@@ -42,7 +42,7 @@ class QrPagoAdminService {
     // Usamos un nombre nuevo por actualización para evitar caché y conservar
     // la imagen anterior si hay clientes con una pantalla de pago abierta.
     final marcaTiempo = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final ruta = 'qr-negocio/qr_\$marcaTiempo.png';
+    final ruta = 'qr-negocio/qr_$marcaTiempo.png';
     final storage = _supabase.storage.from(_bucket);
 
     await storage.uploadBinary(
