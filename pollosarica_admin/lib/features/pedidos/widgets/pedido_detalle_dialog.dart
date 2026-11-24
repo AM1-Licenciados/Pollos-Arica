@@ -102,6 +102,40 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
         '${dosDigitos(local.hour)}:${dosDigitos(local.minute)}';
   }
 
+  List<String> get _estadosPagoDisponibles {
+    final metodo = widget.pedido.metodoPago;
+    
+    if (metodo == 'qr') {
+      if (_estadoPago == 'por_verificar') {
+        return const ['por_verificar', 'pagado', 'rechazado'];
+      }
+      return [_estadoPago];
+    }
+
+    if (metodo == 'efectivo') {
+      if (_estadoPago == 'pendiente') {
+        return const ['pendiente', 'pagado'];
+      }
+      return [_estadoPago];
+    }
+
+    return [_estadoPago];
+  }
+
+  String? get _ayudaEstadoPago {
+    if (widget.pedido.metodoPago == 'qr' && _estadoPago == 'pendiente') {
+      return 'El cliente todavía no notificó el pago. '
+          'Cuando lo haga, podrás verificarlo aquí.';
+    }
+
+    if (widget.pedido.metodoPago == 'qr' &&
+        _estadoPago == 'por_verificar') {
+      return 'Verifica el movimiento en la banca del negocio antes de confirmar.';
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final pedido = widget.pedido;
@@ -269,7 +303,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       decoration: const InputDecoration(
                         labelText: 'Estado del pago',
                       ),
-                      items: PedidoEstados.pago.map((estado) {
+                      items: _estadosPagoDisponibles.map((estado) {
                         return DropdownMenuItem(
                           value: estado,
                           child: Text(PedidoEstados.etiqueta(estado)),
@@ -281,6 +315,16 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       const LinearProgressIndicator(
                         color: AppTheme.naranja,
                       ),
+                    if (_ayudaEstadoPago != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _ayudaEstadoPago!,
+                        style: const TextStyle(
+                          color: AppTheme.textoSecundario,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 22),
 
                     _seccionTitulo('Estado del pedido'),
