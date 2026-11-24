@@ -1,9 +1,11 @@
 
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../catalogo/screens/catalogo_screen.dart';
@@ -37,7 +39,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
   bool _pagoNotificado = false;
   bool _subiendoComprobante = false;
   bool _descargandoQr = false;
-  XFile? _comprobanteSeleccionado;
   Uint8List? _comprobanteBytes;
   bool _comprobanteSubido = false;
 
@@ -211,7 +212,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
 
       setState(() {
         _subiendoComprobante = true;
-        _comprobanteSeleccionado = archivo;
         _comprobanteBytes = bytes;
         _comprobanteSubido = false;
       });
@@ -230,7 +230,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
       if (!mounted) return;
       setState(() {
         _comprobanteSubido = false;
-        _comprobanteSeleccionado = null;
         _comprobanteBytes = null;
       });
       final mensaje = error.toString().replaceFirst('Exception: ', '');
@@ -247,16 +246,17 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
     if (url == null || url.isEmpty || _descargandoQr) return;
     setState(() => _descargandoQr = true);
     try {
-      final guardado = await GallerySaver.saveImage(
-        url,
-        albumName: 'Pollos Arica',
-      );
+      final guardado = kIsWeb
+          ? await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)
+          : await GallerySaver.saveImage(url, albumName: 'Pollos Arica');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(guardado == true
               ? 'Código QR guardado en tu galería.'
-              : 'No se pudo guardar el QR en la galería.'),
+              : kIsWeb
+                  ? 'Se abrió el QR en el navegador para guardarlo.'
+                  : 'No se pudo guardar el QR en la galería.'),
         ),
       );
     } catch (error) {
