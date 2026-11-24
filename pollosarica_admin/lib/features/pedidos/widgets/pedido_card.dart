@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -17,32 +16,41 @@ class PedidoCard extends StatelessWidget {
   Color _colorEstado(String estado) {
     switch (estado) {
       case 'pendiente':
-        return const Color(0xFFFFA726);
+        return const Color(0xFFE59A22);
       case 'aceptado':
-        return const Color(0xFF42A5F5);
+        return const Color(0xFF438CCB);
       case 'en_preparacion':
-        return const Color(0xFF8E65C5);
+        return const Color(0xFF8B65C5);
       case 'listo':
-        return const Color(0xFF26A69A);
+        return const Color(0xFF229F91);
       case 'entregado':
-        return const Color(0xFF66A56B);
+        return const Color(0xFF579A65);
       case 'rechazado':
       case 'cancelado':
-        return const Color(0xFFE57373);
+        return const Color(0xFFD65F5F);
       default:
         return AppTheme.textoSecundario;
     }
   }
 
+  Color _colorEstadoPago() {
+    switch (pedido.estadoPago) {
+      case 'por_verificar':
+        return const Color(0xFFB7791F);
+      case 'pagado':
+        return const Color(0xFF32866C);
+      case 'rechazado':
+        return const Color(0xFFD65F5F);
+      default:
+        return const Color(0xFF8A817B);
+    }
+  }
+
   String _formatearFecha(DateTime? fecha) {
     if (fecha == null) return 'Fecha no disponible';
-
     final local = fecha.toLocal();
-
-    String dosDigitos(int valor) => valor.toString().padLeft(2, '0');
-
-    return '${dosDigitos(local.day)}/${dosDigitos(local.month)}/${local.year} '
-        '${dosDigitos(local.hour)}:${dosDigitos(local.minute)}';
+    String d(int v) => v.toString().padLeft(2, '0');
+    return '${d(local.day)}/${d(local.month)}/${local.year} ${d(local.hour)}:${d(local.minute)}';
   }
 
   String _etiquetaPago(String metodo) {
@@ -56,37 +64,36 @@ class PedidoCard extends StatelessWidget {
     }
   }
 
-  IconData _iconoPago(String metodo) {
-    return metodo.toLowerCase() == 'qr'
-        ? Icons.qr_code_2
-        : Icons.payments_outlined;
-  }
+  IconData _iconoPago(String metodo) =>
+      metodo.toLowerCase() == 'qr' ? Icons.qr_code_2_rounded : Icons.payments_outlined;
 
   @override
   Widget build(BuildContext context) {
     final color = _colorEstado(pedido.estado);
-
-    final cantidadProductos = pedido.detalles.fold<int>(
-      0,
-      (total, item) => total + item.cantidad,
-    );
+    final cantidad = pedido.detalles.fold<int>(0, (total, item) => total + item.cantidad);
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEDE5DC)),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppTheme.borde),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF39271D).withValues(alpha: 0.035),
+                blurRadius: 16,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Código y estado.
               Row(
                 children: [
                   Expanded(
@@ -96,36 +103,20 @@ class PedidoCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.marron,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.1,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      PedidoEstados.etiqueta(pedido.estado),
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  _ChipEstado(
+                    texto: PedidoEstados.etiqueta(pedido.estado),
+                    color: color,
                   ),
                 ],
               ),
-
-              const SizedBox(height: 13),
-
-              // Cliente.
+              const SizedBox(height: 15),
               Text(
                 pedido.nombreCliente,
                 maxLines: 1,
@@ -133,12 +124,11 @@ class PedidoCard extends StatelessWidget {
                 style: const TextStyle(
                   color: AppTheme.marron,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-
               if (pedido.celularCliente.isNotEmpty) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   pedido.celularCliente,
                   style: const TextStyle(
@@ -147,57 +137,40 @@ class PedidoCard extends StatelessWidget {
                   ),
                 ),
               ],
-
-              const SizedBox(height: 13),
-
-              // Cantidad de productos y total.
+              const SizedBox(height: 17),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.shopping_bag_outlined,
-                    color: AppTheme.naranja,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.shopping_bag_outlined,
+                      color: AppTheme.naranja, size: 16),
+                  const SizedBox(width: 7),
                   Expanded(
-                    child: Text(
-                      '$cantidadProductos productos',
-                      style: const TextStyle(
-                        color: AppTheme.textoSecundario,
-                        fontSize: 11,
-                      ),
-                    ),
+                    child: Text('$cantidad productos',
+                        style: const TextStyle(
+                            color: AppTheme.textoSecundario, fontSize: 11)),
                   ),
                   Text(
                     'Bs ${pedido.total.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: AppTheme.marron,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
-
               const Spacer(),
-
-              const Divider(
-                height: 20,
-                color: Color(0xFFEDE5DC),
-              ),
-
-              // Modalidad y método de pago.
+              const Divider(height: 22, color: AppTheme.borde),
               Row(
                 children: [
                   Icon(
                     pedido.tipoEntrega == 'retiro'
-                        ? Icons.store_outlined
+                        ? Icons.storefront_outlined
                         : Icons.restaurant_outlined,
                     color: AppTheme.textoSecundario,
                     size: 15,
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       pedido.tipoEntrega == 'retiro'
@@ -206,57 +179,75 @@ class PedidoCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppTheme.textoSecundario,
-                        fontSize: 10,
-                      ),
+                          color: AppTheme.textoSecundario, fontSize: 10),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _iconoPago(pedido.metodoPago),
-                    color: AppTheme.naranja,
-                    size: 15,
-                  ),
+                  Icon(_iconoPago(pedido.metodoPago),
+                      color: AppTheme.naranja, size: 15),
                   const SizedBox(width: 5),
-                  Text(
-                    _etiquetaPago(pedido.metodoPago),
-                    style: const TextStyle(
-                      color: AppTheme.textoSecundario,
-                      fontSize: 10,
-                    ),
-                  ),
+                  Text(_etiquetaPago(pedido.metodoPago),
+                      style: const TextStyle(
+                          color: AppTheme.textoSecundario, fontSize: 10)),
                   const SizedBox(width: 8),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppTheme.naranja,
-                    size: 19,
-                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded,
+                      color: AppTheme.naranja, size: 13),
                 ],
               ),
-
-              const SizedBox(height: 7),
-
-              // Fecha y hora.
+              if (pedido.metodoPago == 'qr') ...[
+                const SizedBox(height: 9),
+                Row(
+                  children: [
+                    Icon(Icons.circle, size: 7, color: _colorEstadoPago()),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Pago: ${PedidoEstados.etiqueta(pedido.estadoPago)}',
+                      style: TextStyle(
+                        color: _colorEstadoPago(),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 9),
               Row(
                 children: [
-                  const Icon(
-                    Icons.access_time,
-                    color: AppTheme.textoSecundario,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    _formatearFecha(pedido.createdAt),
-                    style: const TextStyle(
-                      color: AppTheme.textoSecundario,
-                      fontSize: 10,
-                    ),
-                  ),
+                  const Icon(Icons.schedule_rounded,
+                      color: AppTheme.textoSecundario, size: 13),
+                  const SizedBox(width: 6),
+                  Text(_formatearFecha(pedido.createdAt),
+                      style: const TextStyle(
+                          color: AppTheme.textoSecundario, fontSize: 10)),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChipEstado extends StatelessWidget {
+  final String texto;
+  final Color color;
+
+  const _ChipEstado({required this.texto, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Text(
+        texto,
+        style: TextStyle(
+            color: color, fontSize: 10, fontWeight: FontWeight.w800),
       ),
     );
   }
