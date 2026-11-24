@@ -50,7 +50,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
   void initState() {
     super.initState();
     _cargarCliente();
-    _cargarQr();
   }
 
   @override
@@ -179,6 +178,10 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
       if (!mounted) return;
 
       setState(() => _pedidoCreado = pedido);
+
+      if (pedido.metodoPago == 'qr') {
+        await _cargarQr();
+      }
     } catch (error) {
       if (!mounted) return;
 
@@ -465,10 +468,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                     ],
                   ),
 
-                  if (_metodoPago == 'qr') ...[
-                    const SizedBox(height: 12),
-                    _construirQr(),
-                  ],
+
 
                   const SizedBox(height: 24),
 
@@ -696,7 +696,12 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
               ),
               if (pedido.metodoPago == 'qr') ...[
                 const SizedBox(height: 16),
-                if (_qrUrl != null && _qrUrl!.isNotEmpty) ...[
+                if (_cargandoQr)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(color: AppTheme.naranja),
+                  )
+                else if (_qrUrl != null && _qrUrl!.isNotEmpty) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -818,10 +823,18 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                     ),
                   ),
                 ] else
-                  const Text(
-                    'No pudimos mostrar el QR. Comunícate con el personal para recibir instrucciones de pago.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textoSecundario),
+                  Column(
+                    children: [
+                      Text(
+                        _errorQr ?? 'No pudimos mostrar el QR. Comunícate con el personal para recibir instrucciones de pago.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppTheme.textoSecundario),
+                      ),
+                      TextButton(
+                        onPressed: _cargarQr,
+                        child: const Text('Reintentar cargar QR'),
+                      ),
+                    ],
                   ),
               ],
               const SizedBox(height: 20),
@@ -841,89 +854,6 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _construirQr() {
-    if (_cargandoQr) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(18),
-          child: CircularProgressIndicator(
-            color: AppTheme.naranja,
-          ),
-        ),
-      );
-    }
-
-    if (_errorQr != null) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: _decoracion(),
-        child: Column(
-          children: [
-            Text(
-              _errorQr!,
-              style: const TextStyle(
-                color: AppTheme.textoSecundario,
-              ),
-            ),
-            TextButton(
-              onPressed: _cargarQr,
-              child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_qrUrl == null || _qrUrl!.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _decoracion(),
-        child: const Text(
-          'El QR todavía no está configurado. Puedes registrar el pedido y el personal te indicará cómo realizar el pago.',
-          style: TextStyle(
-            color: AppTheme.textoSecundario,
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: _decoracion(),
-      child: Column(
-        children: [
-          const Text(
-            'Escanea este código QR',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.marron,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Image.network(
-            _qrUrl!,
-            height: 220,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.qr_code_2,
-              size: 100,
-              color: AppTheme.naranja,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Transfiere el importe exacto de tu pedido. El pago será verificado por nuestro personal.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textoSecundario,
-            ),
-          ),
-        ],
       ),
     );
   }
