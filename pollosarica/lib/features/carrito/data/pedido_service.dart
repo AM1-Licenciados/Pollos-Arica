@@ -9,12 +9,14 @@ class PedidoCreado {
   final String id;
   final String codigo;
   final double total;
+  final String metodoPago;
   final bool seguimientoGuardado;
 
   const PedidoCreado({
     required this.id,
     required this.codigo,
     required this.total,
+    required this.metodoPago,
     this.seguimientoGuardado = true,
   });
 }
@@ -34,6 +36,33 @@ class PedidoService {
         .maybeSingle();
 
     return respuesta?['qr_imagen_url'] as String?;
+  }
+
+  Future<void> notificarPagoQr(String pedidoId) async {
+    final usuario = _supabase.auth.currentUser;
+
+    if (usuario == null) {
+      throw Exception('Debes iniciar sesión para notificar el pago.');
+    }
+
+    final respuesta = await _supabase
+        .from('pedidos')
+        .update({
+          'estado_pago': 'por_verificar',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', pedidoId)
+        .eq('auth_user_id', usuario.id)
+        .eq('metodo_pago', 'qr')
+        .eq('estado_pago', 'pendiente')
+        .select('id');
+
+    if (respuesta.isEmpty) {
+      throw Exception(
+        'No se pudo notificar el pago. Puede que ya esté notificado '
+        'o que el pedido no corresponda a tu cuenta.',
+      );
+    }
   }
 
   Future<PedidoCreado> crearPedido({
@@ -130,6 +159,7 @@ class PedidoService {
       id: pedidoId,
       codigo: codigo,
       total: total.toDouble(),
+      metodoPago: metodoPago,
       seguimientoGuardado: seguimientoGuardado,
     );
 
