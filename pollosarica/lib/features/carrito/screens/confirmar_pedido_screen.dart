@@ -324,20 +324,21 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.crema,
-      appBar: AppBar(
-        backgroundColor: AppTheme.crema,
-        foregroundColor: AppTheme.marron,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          pedido == null ? 'Confirmar pedido' : 'Pedido registrado',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        automaticallyImplyLeading: pedido == null,
-      ),
+      appBar: pedido == null
+          ? AppBar(
+              backgroundColor: AppTheme.crema,
+              foregroundColor: AppTheme.marron,
+              elevation: 0,
+              centerTitle: true,
+              title: const Text(
+                'Confirmar pedido',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            )
+          : null,
       body: pedido != null
           ? _construirExito(pedido)
           : Form(
@@ -669,7 +670,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                       color: AppTheme.marron)),
               const SizedBox(height: 8),
               const Text(
-                'Tu pedido fue enviado a Pollos Arica y está pendiente de revisión.',
+                'Pedido enviado. Pendiente de revisión.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textoSecundario),
               ),
@@ -687,10 +688,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                         style: const TextStyle(fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.naranja)),
-                    const SizedBox(height: 8),
-                    Text('Total: ${_precio(pedido.total)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold,
-                            color: AppTheme.marron)),
+
                   ],
                 ),
               ),
@@ -721,25 +719,66 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                                   Icons.qr_code_2, size: 120,
                                   color: AppTheme.naranja)),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.crema,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total',
+                                style: TextStyle(
+                                  color: AppTheme.marron,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                _precio(pedido.total),
+                                style: const TextStyle(
+                                  color: AppTheme.naranja,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         OutlinedButton.icon(
                           onPressed: _descargandoQr ? null : _descargarQr,
                           icon: _descargandoQr
-                              ? const SizedBox(width: 16, height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
                               : const Icon(Icons.download_outlined),
-                          label: Text(_descargandoQr ? 'Guardando...' : 'Descargar QR'),
+                          label: Text(
+                            _descargandoQr ? 'Guardando...' : 'Descargar QR',
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.naranja,
                             side: const BorderSide(color: AppTheme.naranja),
+                            minimumSize: const Size.fromHeight(44),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Transfiere ${_precio(pedido.total)}. El personal verificará el movimiento en la banca.',
+                        const Text(
+                          'El personal verificará el pago',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppTheme.textoSecundario,
-                              fontSize: 12),
+                          style: TextStyle(
+                            color: AppTheme.textoSecundario,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -782,7 +821,7 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                           const SizedBox(height: 6),
                           Text(
                             _comprobanteSubido
-                                ? 'Comprobante cargado correctamente.'
+                                ? 'Comprobante cargado.'
                                 : 'Comprobante seleccionado.',
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 11,
@@ -811,10 +850,10 @@ class _ConfirmarPedidoScreenState extends State<ConfirmarPedidoScreen> {
                         const SizedBox(height: 7),
                         Text(
                           _pagoNotificado
-                              ? 'Tu aviso fue enviado. Espera la verificación del personal.'
+                              ? 'Aviso enviado. Espera la verificación.'
                               : _comprobanteSubido
-                                  ? 'Comprobante adjuntado. Ahora puedes notificar tu pago.'
-                                  : 'Adjunta primero una imagen del comprobante para habilitar este botón.',
+                                  ? 'Comprobante listo. Notifica tu pago.'
+                                  : 'Adjunta el comprobante para continuar.',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                               color: AppTheme.textoSecundario, fontSize: 11),
