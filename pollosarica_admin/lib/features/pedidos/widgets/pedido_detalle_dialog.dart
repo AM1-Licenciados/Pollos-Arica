@@ -109,9 +109,15 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 5),
-            const Text('Toca la imagen para ampliarla.',
-                style: TextStyle(color: AppTheme.textoSecundario, fontSize: 11)),
+            const SizedBox(height: 12),
+            const Text(
+              'Toca la imagen para ampliarla.',
+              style: TextStyle(
+                color: AppTheme.textoSecundario,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         );
       },
@@ -319,7 +325,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                           : pedido.celularCliente,
                     ),
                     _dato('Fecha', _formatearFecha(pedido.createdAt)),
-                    const SizedBox(height: 22),
+                    _separadorSeccion(),
 
                     _seccionTitulo('Productos'),
                     if (pedido.detalles.isEmpty)
@@ -388,7 +394,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                     const SizedBox(height: 12),
                     _dato('Subtotal', 'Bs ${pedido.subtotal.toStringAsFixed(2)}'),
                     _dato('TOTAL', 'Bs ${pedido.total.toStringAsFixed(2)}'),
-                    const SizedBox(height: 22),
+                    _separadorSeccion(),
 
                     _seccionTitulo('Entrega y preparación'),
                     _dato(
@@ -409,7 +415,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                         'Cliente llegó',
                         pedido.clienteLlego ? 'Sí' : 'No',
                       ),
-                    const SizedBox(height: 22),
+                    _separadorSeccion(),
 
                     _seccionTitulo('Pago'),
                     _dato(
@@ -447,7 +453,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 22),
+                    _separadorSeccion(),
 
                     _seccionTitulo('Estado del pedido'),
                     DropdownButtonFormField<String>(
@@ -470,7 +476,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       const LinearProgressIndicator(
                         color: AppTheme.naranja,
                       ),
-                    const SizedBox(height: 22),
+                    _separadorSeccion(),
 
                     _seccionTitulo('Observaciones'),
                     Text(
@@ -487,6 +493,17 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _separadorSeccion() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: AppTheme.borde.withValues(alpha: 0.75),
       ),
     );
   }
