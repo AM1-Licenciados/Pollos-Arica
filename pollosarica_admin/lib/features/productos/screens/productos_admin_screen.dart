@@ -322,7 +322,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 ),
               ),
               Text(
-                producto.variantes.length.toString() + ' precio(s)',
+                producto.variantes.isEmpty
+                    ? 'Precio pendiente'
+                    : producto.variantes.length.toString() + ' precio(s)',
                 style: const TextStyle(
                   color: AppTheme.textoSecundario,
                   fontSize: 11,
