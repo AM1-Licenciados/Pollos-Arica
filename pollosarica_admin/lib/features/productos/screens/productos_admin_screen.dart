@@ -125,7 +125,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       if (!mounted) return;
       await _cargar();
       if (!mounted) return;
-      _mensaje('Precio de 2 L guardado: Bs ' + precio.toStringAsFixed(2));
+      _mensaje('Precio de 2 L guardado: Bs ${precio.toStringAsFixed(2)}');
     } catch (error) {
       if (!mounted) return;
       _mensaje(error.toString().replaceFirst('Exception: ', ''), error: true);
@@ -324,7 +324,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
               Text(
                 producto.variantes.isEmpty
                     ? 'Precio pendiente'
-                    : producto.variantes.length.toString() + ' precio(s)',
+                    : '${producto.variantes.length} precio(s)',
                 style: const TextStyle(
                   color: AppTheme.textoSecundario,
                   fontSize: 11,
