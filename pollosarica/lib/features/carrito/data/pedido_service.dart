@@ -58,9 +58,28 @@ class PedidoService {
         .select('id');
 
     if (respuesta.isEmpty) {
+      // Hacer la operación idempotente: si la primera solicitud llegó
+      // al servidor pero se perdió la respuesta, el cliente puede reintentar.
+      final pedidoActual = await _supabase
+          .from('pedidos')
+          .select('estado_pago')
+          .eq('id', pedidoId)
+          .eq('auth_user_id', usuario.id)
+          .eq('metodo_pago', 'qr')
+          .maybeSingle();
+
+      if (pedidoActual?['estado_pago'] == 'por_verificar' ||
+          pedidoActual?['estado_pago'] == 'pagado') {
+        return;
+      }
+
+      if (pedidoActual?['estado_pago'] == 'rechazado') {
+        throw Exception('El pago de este pedido fue rechazado.');
+      }
+
       throw Exception(
-        'No se pudo notificar el pago. Puede que ya esté notificado '
-        'o que el pedido no corresponda a tu cuenta.',
+        'No se pudo notificar el pago. Verifica que el pedido '
+        'pertenezca a tu cuenta y siga pendiente.',
       );
     }
   }
