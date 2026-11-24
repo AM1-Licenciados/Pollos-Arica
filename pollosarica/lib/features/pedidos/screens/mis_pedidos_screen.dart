@@ -55,7 +55,22 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
         ),
       );
 
-      await _actualizarPedidos();
+      // La notificación ya fue guardada. Si falla la recarga, no debemos
+      // informar al cliente que el pago no se notificó.
+      try {
+        await _actualizarPedidos();
+      } catch (_) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'El pago fue notificado, pero no pudimos actualizar la lista. '
+              'Desliza hacia abajo para volver a cargarla.',
+            ),
+          ),
+        );
+      }
     } catch (error) {
       if (!mounted) return;
 
