@@ -293,7 +293,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _construirFiltros(pedidos.length),
                   ),
@@ -310,7 +310,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                    padding: const EdgeInsets.fromLTRB(16, 15, 16, 28),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) =>
@@ -328,28 +328,11 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
   }
 
   Widget _construirFiltros(int cantidadTotal) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 2, bottom: 10),
-          child: Text(
-            'TUS PEDIDOS',
-            style: TextStyle(
-              color: AppTheme.textoSecundario,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            _construirOpcionFiltro('Todos', cantidadTotal),
-            const SizedBox(width: 9),
-            _construirOpcionFiltro('En curso', null),
-          ],
-        ),
+        _construirOpcionFiltro('Todos', cantidadTotal),
+        const SizedBox(width: 9),
+        _construirOpcionFiltro('En curso', null),
       ],
     );
   }
