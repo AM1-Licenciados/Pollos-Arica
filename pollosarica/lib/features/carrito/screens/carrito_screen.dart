@@ -57,8 +57,9 @@ class CarritoScreen extends StatelessWidget {
                             nombre: item.producto.nombre,
                             seccion: item.producto.seccion,
                             variante: item.variante.nombre,
-                            imagenUrl: item.variante.imagenUrl ??
-                                item.producto.imagenUrl,
+                            imagenUrl: (item.variante.imagenUrl?.trim().isNotEmpty ?? false)
+                                ? item.variante.imagenUrl!.trim()
+                                : item.producto.imagenUrl,
                             precio: item.variante.precio,
                             cantidad: item.cantidad,
                             subtotal: item.subtotal,
