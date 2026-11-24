@@ -240,7 +240,7 @@ class _QrPagoAdminScreenState extends State<QrPagoAdminScreen> {
                     ),
                     const SizedBox(height: 18),
                     Container(
-                      width: 300,
+                      width: MediaQuery.sizeOf(context).width < 360 ? 220 : 300,
                       constraints: const BoxConstraints(maxWidth: 300),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
