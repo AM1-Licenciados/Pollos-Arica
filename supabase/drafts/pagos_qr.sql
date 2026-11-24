@@ -15,8 +15,10 @@
 -- - Este archivo NO ha sido aplicado.
 -- - Requiere pruebas en un entorno PostgreSQL aislado antes de produccion.
 -- - Se basa en el esquema inspeccionado el 2026-11-23.
--- - No cambia los permisos de crear_pedido, crear_pedido_con_seguimiento
---   ni obtener_mis_pedidos.
+-- - Restringe crear_pedido al uso interno del wrapper SECURITY DEFINER.
+-- - El wrapper de creacion queda disponible solo para authenticated.
+-- - obtener_mis_pedidos conserva acceso anonimo porque el seguimiento local
+--   se recupera mediante un token UUID privado, incluso sin sesion activa.
 -- - No resuelve la integracion automatica con BCP. La verificacion sigue
 --   siendo manual desde la banca del negocio.
 --
@@ -210,14 +212,23 @@ create policy clientes_notificar_pago_qr
 grant update (estado_pago, updated_at) on public.pedidos to authenticated;
 grant update (estado, updated_at) on public.pedidos to authenticated;
 
--- 5.1. Cerrar el RPC interno de creacion directa.
--- La app cliente utiliza crear_pedido_con_seguimiento; esta funcion
--- interna es invocada por el wrapper SECURITY DEFINER como propietario.
--- Se conserva el acceso al wrapper y a obtener_mis_pedidos, que se usa
--- para recuperar pedidos mediante su token privado de seguimiento.
+-- 5.1. Limitar los RPC de creacion de pedidos.
+-- La app exige sesion y llama al wrapper. La restriccion en PostgreSQL
+-- evita que un tercero omita la validacion de autenticacion del cliente.
+-- El wrapper SECURITY DEFINER sigue pudiendo invocar la funcion interna
+-- como propietario (postgres).
 revoke execute on function public.crear_pedido(
   text, text, text, jsonb, text, text, text
 ) from public, anon, authenticated;
+
+-- La creacion de pedidos solo se expone a usuarios autenticados.
+-- La funcion ya asocia auth.uid() al pedido cuando existe sesion.
+revoke execute on function public.crear_pedido_con_seguimiento(
+  text, text, text, jsonb, text, text, text
+) from public, anon, authenticated;
+grant execute on function public.crear_pedido_con_seguimiento(
+  text, text, text, jsonb, text, text, text
+) to authenticated;
 
 -- 6. Triggers.
 drop trigger if exists validar_transicion_pedido_qr
