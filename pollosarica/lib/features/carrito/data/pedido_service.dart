@@ -1,4 +1,5 @@
 
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../cliente/services/cliente_local_service.dart';
@@ -36,6 +37,81 @@ class PedidoService {
         .maybeSingle();
 
     return respuesta?['qr_imagen_url'] as String?;
+  }
+
+
+  static const String _bucketComprobantes = 'comprobantes-pago';
+
+  Future<void> subirComprobanteQr({
+    required String pedidoId,
+    required XFile archivo,
+  }) async {
+    final usuario = _supabase.auth.currentUser;
+    if (usuario == null) {
+      throw Exception('Debes iniciar sesión para adjuntar el comprobante.');
+    }
+
+    final extension = archivo.name.split('.').last.toLowerCase();
+    final mime = switch (extension) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => null,
+    };
+
+    if (mime == null) {
+      throw Exception('Formato no permitido. Usa JPG, PNG o WEBP.');
+    }
+
+    final bytes = await archivo.readAsBytes();
+    if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+      throw Exception('El comprobante debe pesar como máximo 5 MB.');
+    }
+
+    final pedido = await _supabase
+        .from('pedidos')
+        .select('id, metodo_pago, estado_pago')
+        .eq('id', pedidoId)
+        .eq('auth_user_id', usuario.id)
+        .maybeSingle();
+
+    if (pedido == null ||
+        pedido['metodo_pago'] != 'qr' ||
+        pedido['estado_pago'] != 'pendiente') {
+      throw Exception('Este pedido ya no admite comprobantes.');
+    }
+
+    final ruta = '${usuario.id}/$pedidoId/comprobante';
+    final storage = _supabase.storage.from(_bucketComprobantes);
+
+    // Si el cliente reemplaza la imagen o reintenta tras un fallo de red,
+    // se elimina el archivo anterior antes de subir el nuevo.
+    try {
+      await storage.remove([ruta]);
+    } catch (_) {
+      // No existe archivo anterior: continuamos con la primera carga.
+    }
+
+    await storage.uploadBinary(
+      ruta,
+      bytes,
+      fileOptions: FileOptions(
+        contentType: mime,
+        upsert: false,
+      ),
+    );
+  }
+
+  Future<String?> obtenerUrlComprobanteQr(String authUserId, String pedidoId) async {
+    if (!_supabase.auth.currentUser?.id.isNotEmpty ?? true) return null;
+    final ruta = '$authUserId/$pedidoId/comprobante';
+    try {
+      return await _supabase.storage
+          .from(_bucketComprobantes)
+          .createSignedUrl(ruta, 300);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> notificarPagoQr(String pedidoId) async {
