@@ -19,14 +19,14 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Algunos plugins Android declaran un compileSdk antiguo en su propio módulo.
-// Se aplica el valor después de evaluar el módulo para evitar que el build.gradle
-// del plugin vuelva a sobrescribirlo (por ejemplo, gallery_saver_plus).
+// gallery_saver_plus declara compileSdk 31. Ajustamos el valor en el último
+// punto oficial del ciclo de configuración de Android, antes de que AGP lo
+// bloquee para validar los metadatos de sus dependencias.
 subprojects {
     plugins.withId("com.android.library") {
-        afterEvaluate {
-            extensions.configure<com.android.build.api.dsl.LibraryExtension> {
-                compileSdk = 36
+        extensions.configure<com.android.build.api.variant.LibraryAndroidComponentsExtension> {
+            finalizeDsl { libraryExtension ->
+                libraryExtension.compileSdk = 36
             }
         }
     }
