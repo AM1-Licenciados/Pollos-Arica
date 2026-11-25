@@ -20,11 +20,14 @@ subprojects {
 }
 
 // Algunos plugins Android declaran un compileSdk antiguo en su propio módulo.
-// Se eleva el de las bibliotecas Android para satisfacer las dependencias AndroidX.
+// Se aplica el valor después de evaluar el módulo para evitar que el build.gradle
+// del plugin vuelva a sobrescribirlo (por ejemplo, gallery_saver_plus).
 subprojects {
     plugins.withId("com.android.library") {
-        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
-            compileSdk = 36
+        afterEvaluate {
+            extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+                compileSdk = 36
+            }
         }
     }
 }
