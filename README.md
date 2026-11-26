@@ -2,65 +2,59 @@
 
 **Sistema de consulta de menú y gestión de pedidos para un negocio gastronómico.**
 
-Pollos Arica es un proyecto académico desarrollado con Flutter y Supabase. Su objetivo es facilitar a los clientes la consulta del menú y la realización de pedidos, y ofrecer al administrador una interfaz web para revisar y gestionar las solicitudes.
+Pollos Arica es un proyecto académico desarrollado con Flutter/Dart y Supabase. La solución comprende una aplicación móvil para clientes y un panel web administrativo, conectados a un backend compartido.
 
-> **Estado del repositorio:** esta primera publicación contiene documentación del proyecto. El código fuente de las aplicaciones todavía no está incorporado. La versión de trabajo más reciente permanece en el equipo de desarrollo y deberá añadirse cuando esté disponible.
+> **Estado del repositorio:** este repositorio contiene documentación técnica del proyecto. La copia de trabajo más reciente de las aplicaciones y las migraciones SQL debe incorporarse desde el equipo de desarrollo. Los documentos describen las funcionalidades trabajadas, pero los nombres exactos de tablas, RPC, variables y políticas deben cotejarse con el código/SQL vigente antes de una auditoría formal.
 
-## Componentes del sistema
+## Componentes
 
 | Componente | Tecnología | Propósito |
 |---|---|---|
-| Aplicación del cliente | Flutter / Dart | Catálogo, carrito, confirmación y consulta de pedidos |
-| Panel administrativo | Flutter Web / Dart | Acceso del administrador y gestión de pedidos |
-| Backend compartido | Supabase | Servicios y conexión de ambas aplicaciones |
-| Base de datos | PostgreSQL | Productos, categorías, clientes y pedidos |
-| Almacenamiento | Supabase Storage | Imágenes de productos |
-| Autenticación | Supabase Auth | Inicio de sesión administrativo |
+| App cliente | Flutter / Dart | Catálogo, búsqueda, carrito, pedido, pagos y seguimiento |
+| Panel administrador | Flutter Web / Dart | Gestión de catálogo, pedidos, estados y configuración |
+| Backend | Supabase | API, Auth, Storage y funciones RPC |
+| Base de datos | PostgreSQL | Productos, variantes, clientes, pedidos y detalles |
+| Seguridad | Supabase RLS | Control de acceso a los datos |
 
-## Funcionalidades desarrolladas hasta el avance documentado
+## Funcionalidades principales
 
-- Catálogo de productos organizado por categorías, variantes y precios.
-- Carrito de compras y confirmación de pedidos.
-- Registro de datos básicos del cliente en el dispositivo.
-- Creación de pedidos mediante una función RPC que valida productos, cantidades y precios en el servidor.
-- Código y token de seguimiento para consultar pedidos.
-- Sección **Mis pedidos**, con historial disponible en el mismo dispositivo o navegador donde se guardaron las credenciales.
-- Panel administrativo web con autenticación y módulo de consulta y actualización de pedidos.
-- Separación entre estado del pedido y estado del pago.
-- Políticas de seguridad mediante Row Level Security (RLS).
-
-## Arquitectura
-
-Las dos aplicaciones son proyectos Flutter independientes y utilizan el mismo proyecto Supabase. Consulta [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
-
-## Base de datos
-
-La estructura relacional y las responsabilidades de las tablas se describen en [docs/BASE_DE_DATOS.md](docs/BASE_DE_DATOS.md).
+- Catálogo por categorías con productos, variantes, precios y disponibilidad.
+- Búsqueda de productos, incluida búsqueda por voz en la versión desarrollada.
+- Carrito y registro de pedido mediante RPC con validación de precios en el servidor.
+- Código/credenciales de seguimiento y sección Mis pedidos.
+- Modalidades y métodos de pago configurados en la app, incluidos efectivo y QR.
+- Adjuntar comprobante de pago QR para revisión manual.
+- Panel administrativo autenticado para revisar pedidos y actualizar estados.
+- Gestión administrativa de productos/precios y configuración del QR de pago.
+- Separación entre estado operativo del pedido y estado del pago.
 
 ## Documentación
 
-- [Arquitectura del sistema](docs/ARQUITECTURA.md)
-- [Modelo de datos](docs/BASE_DE_DATOS.md)
-- [Estado y próximos pasos](docs/ESTADO_PROYECTO.md)
+Comienza por el [índice de documentación](docs/README.md).
+
+- [Arquitectura](docs/ARQUITECTURA.md)
+- [Funcionalidades y reglas de negocio](docs/OPERACION_Y_FUNCIONALIDADES.md)
+- [Instalación y ejecución](docs/INSTALACION_Y_EJECUCION.md)
+- [Flujo de pedidos y pagos](docs/FLUJO_PEDIDOS_Y_PAGOS.md)
+- [Modelo de base de datos](docs/BASE_DE_DATOS.md)
+- [Seguridad de Supabase y RLS](docs/SEGURIDAD_SUPABASE_RLS.md)
+- [Pruebas y publicación](docs/PRUEBAS_Y_PUBLICACION.md)
 - [Configuración y seguridad](docs/CONFIGURACION_Y_SEGURIDAD.md)
+- [Estado del proyecto](docs/ESTADO_PROYECTO.md)
 
 ## Tecnologías
 
-- Flutter y Dart
-- Supabase
-- PostgreSQL
-- Supabase Auth
-- Supabase Storage
-- Row Level Security (RLS)
+Flutter, Dart, Supabase, PostgreSQL, Supabase Auth, Supabase Storage y Row Level Security (RLS).
 
-## Ejecución
+## Configuración segura
 
-Cuando el código fuente sea incorporado, cada aplicación tendrá sus propias instrucciones de instalación y ejecución. Las credenciales de Supabase deberán configurarse mediante variables de compilación o un mecanismo local seguro.
+Las aplicaciones cliente deben utilizar únicamente la URL del proyecto y una clave pública publishable/anon. Nunca incluir `service_role`, contraseñas, tokens privados o archivos de firma en el repositorio, APK o documentación.
 
-## Estado del desarrollo
+## Alcance operativo
 
-El proyecto continúa en desarrollo. Las funciones futuras y las limitaciones conocidas están descritas en [docs/ESTADO_PROYECTO.md](docs/ESTADO_PROYECTO.md).
+La operación actual contempla pedidos para retiro en local. La entrega a domicilio, notificaciones automáticas y otras funciones futuras no deben anunciarse como operativas hasta que estén implementadas y verificadas.
 
 ---
+
 **Proyecto académico — Pollos Arica**  
 **Organización:** AM1-Licenciados
